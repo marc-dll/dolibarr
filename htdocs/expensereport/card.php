@@ -1172,33 +1172,33 @@ if (empty($reshook))
 
 			// Insert line
 			$result = $object->addline($qty, $value_unit, $fk_c_type_fees, $vatrate, $date, $comments, $fk_project, $fk_c_exp_tax_cat, $type, $fk_ecm_files);
-			if ($result > 0)
-			{
-				$ret = $object->fetch($object->id); // Reload to get new records
 
-				if (empty($conf->global->MAIN_DISABLE_PDF_AUTOUPDATE)) {
-					// Define output language
-					$outputlangs = $langs;
-					$newlang = GETPOST('lang_id', 'alpha');
-					if (!empty($conf->global->MAIN_MULTILANGS) && empty($newlang))
-						$newlang = $object->thirdparty->default_lang;
-					if (!empty($newlang)) {
-						$outputlangs = new Translate("", $conf);
-						$outputlangs->setDefaultLang($newlang);
-					}
-
-					$object->generateDocument($object->model_pdf, $outputlangs, $hidedetails, $hidedesc, $hideref);
+			if ($result >= 0) {
+				if (! empty($object->line->rule_warning_message)) {
+					setEventMessages($object->line->rule_warning_message, null, 'warnings');
 				}
 
-				unset($qty);
-				unset($value_unit_ht);
-				unset($value_unit);
-				unset($vatrate);
-				unset($comments);
-				unset($fk_c_type_fees);
-				unset($fk_project);
+				if ($result > 0) {
+					$ret = $object->fetch($object->id); // Reload to get new records
 
-				unset($date);
+					if (empty($conf->global->MAIN_DISABLE_PDF_AUTOUPDATE)) {
+						// Define output language
+						$outputlangs = $langs;
+						$newlang = GETPOST('lang_id', 'alpha');
+						if (!empty($conf->global->MAIN_MULTILANGS) && empty($newlang))
+							$newlang = $object->thirdparty->default_lang;
+						if (!empty($newlang)) {
+							$outputlangs = new Translate("", $conf);
+							$outputlangs->setDefaultLang($newlang);
+						}
+
+						$object->generateDocument($object->model_pdf, $outputlangs, $hidedetails, $hidedesc, $hideref);
+					}
+				}
+
+				setEventMessage($langs->trans('ExpenseReportSave'));
+				header('Location: '.$_SERVER['PHP_SELF'].'?id='.$object->id);
+				exit;
 			} else {
 				setEventMessages($object->error, $object->errors, 'errors');
 			}
@@ -1318,6 +1318,10 @@ if (empty($reshook))
 			$result = $object->updateline($rowid, $type_fees_id, $projet_id, $vatrate, $comments, $qty, $value_unit, $date, $id, $fk_c_exp_tax_cat, $fk_ecm_files);
 			if ($result >= 0)
 			{
+				if (! empty($object->line->rule_warning_message)) {
+					setEventMessage($object->line->rule_warning_message, 'warnings');
+				}
+
 				if ($result > 0)
 				{
 					// Define output language
@@ -1340,8 +1344,9 @@ if (empty($reshook))
 
 				$result = $object->recalculer($id);
 
-				//header("Location: ".$_SERVER["PHP_SELF"]."?id=".$id);
-				//exit;
+				setEventMessage($langs->trans('ExpenseReportSave'));
+				header('Location: '.$_SERVER['PHP_SELF'].'?id='.$object->id);
+				exit;
 			} else {
 				setEventMessages($object->error, $object->errors, 'errors');
 			}

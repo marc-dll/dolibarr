@@ -132,6 +132,7 @@ ExpenseReportLimitAmount=Limite amount
 ExpenseReportRestrictive=Restrictive
 AllExpenseReport=All type of expense report
 OnExpense=Expense line
+ExpenseReportSave=Expense report saved
 ExpenseReportRuleSave=Expense report rule saved
 ExpenseReportRuleErrorOnSave=Error: %s
 RangeNum=Range %d

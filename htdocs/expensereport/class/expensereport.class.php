@@ -1856,7 +1856,12 @@ class ExpenseReport extends CommonObject
 			$this->line->fk_ecm_files = $fk_ecm_files;
 
 			$this->applyOffset();
-			$this->checkRules($type, $seller);
+			$rulesPassed = $this->checkRules($type, $seller);
+
+			if (! $rulesPassed && empty($this->line->total_ttc)) {
+				$this->db->rollback();
+				return 0;
+			}
 
 			$result = $this->line->insert(0, true);
 			if ($result > 0)
@@ -1892,7 +1897,7 @@ class ExpenseReport extends CommonObject
 	 */
 	public function checkRules($type = 0, $seller = '')
 	{
-		global $user, $conf, $db, $langs;
+		global $conf, $langs;
 
 		$langs->load('trips');
 
@@ -1907,30 +1912,35 @@ class ExpenseReport extends CommonObject
 		$new_current_total_ttc = $this->line->total_ttc;
 
 		// check if one is violated
-		foreach ($rulestocheck as $rule)
-		{
-			if (in_array($rule->code_expense_rules_type, array('EX_DAY', 'EX_MON', 'EX_YEA'))) $amount_to_test = $this->line->getExpAmount($rule, $this->fk_user_author, $rule->code_expense_rules_type);
-			else $amount_to_test = $current_total_ttc; // EX_EXP
+		foreach ($rulestocheck as $rule) {
+			if (in_array($rule->code_expense_rules_type, array('EX_DAY', 'EX_MON', 'EX_YEA'))) {
+				$amount_to_test = $this->line->getExpAmount($rule, $this->fk_user_author, $rule->code_expense_rules_type);
+			} else {
+				$amount_to_test = $current_total_ttc; // EX_EXP
+			}
 
 			$amount_to_test = $amount_to_test - $current_total_ttc + $new_current_total_ttc; // if amount as been modified by a previous rule
 
-			if ($amount_to_test > $rule->amount)
-			{
+			if ($amount_to_test > $rule->amount) {
 				$violation++;
 
-				if ($rule->restrictive)
-				{
-					$this->error = 'ExpenseReportConstraintViolationError';
-					$this->errors[] = $this->error;
+				$formatted_amount_to_test = price($amount_to_test, 0, $langs, 1, -1, -1, $conf->currency);
+				$formatted_rule_amount = price($rule->amount, 0, $langs, 1, -1, -1, $conf->currency);
 
+				if ($rule->restrictive) {
 					$new_current_total_ttc -= $amount_to_test - $rule->amount; // ex, entered 16€, limit 12€, subtracts 4€;
-					$rule_warning_message_tab[] = $langs->trans('ExpenseReportConstraintViolationError', $rule->id, price($amount_to_test, 0, $langs, 1, -1, -1, $conf->currency), price($rule->amount, 0, $langs, 1, -1, -1, $conf->currency), $langs->trans('by'.$rule->code_expense_rules_type, price($new_current_total_ttc, 0, $langs, 1, -1, -1, $conf->currency)));
-				} else {
-					$this->error = 'ExpenseReportConstraintViolationWarning';
-					$this->errors[] = $this->error;
 
-					$rule_warning_message_tab[] = $langs->trans('ExpenseReportConstraintViolationWarning', $rule->id, price($amount_to_test, 0, $langs, 1, -1, -1, $conf->currency), price($rule->amount, 0, $langs, 1, -1, -1, $conf->currency), $langs->trans('nolimitby'.$rule->code_expense_rules_type));
+					$error = 'ExpenseReportConstraintViolationError';
+					$limit = $langs->transnoentitiesnoconv('by'.$rule->code_expense_rules_type, price($new_current_total_ttc, 0, $langs, 1, -1, -1, $conf->currency));
+				} else {
+					$error = 'ExpenseReportConstraintViolationWarning';
+					$limit = $langs->transnoentitiesnoconv('nolimitby'.$rule->code_expense_rules_type);
 				}
+
+				$rule_warning_message_tab[] = $langs->trans($error, $rule->id, $formatted_amount_to_test, $formatted_rule_amount, $limit);
+
+				$this->error = $error;
+				$this->errors[] = $this->error;
 
 				// No break, we sould test if another rule is violated
 			}
@@ -1938,8 +1948,7 @@ class ExpenseReport extends CommonObject
 
 		$this->line->rule_warning_message = implode('\n', $rule_warning_message_tab);
 
-		if ($violation > 0)
-		{
+		if ($violation > 0) {
 			$tmp = calcul_price_total($this->line->qty, $new_current_total_ttc / $this->line->qty, 0, $this->line->vatrate, 0, 0, 0, 'TTC', 0, $type, $seller);
 
 			$this->line->value_unit = $tmp[5];
@@ -2128,7 +2137,12 @@ class ExpenseReport extends CommonObject
 			}
 
 			$this->applyOffset();
-			$this->checkRules();
+			$rulesPassed = $this->checkRules();
+
+			if (! $rulesPassed && empty($this->line->total_ttc)) {
+				$this->db->rollback();
+				return 0;
+			}
 
 			$result = $this->line->update($user);
 			if ($result > 0)
