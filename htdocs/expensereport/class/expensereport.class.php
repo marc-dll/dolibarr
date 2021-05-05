@@ -2738,31 +2738,44 @@ class ExpenseReportLine
 	 */
 	public function getExpAmount(ExpenseReportRule $rule, $fk_user, $mode = 'day')
 	{
+		require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
+
 		$amount = 0;
 
 		$sql = 'SELECT SUM(d.total_ttc) as total_amount';
 		$sql .= ' FROM '.MAIN_DB_PREFIX.'expensereport_det d';
 		$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'expensereport e ON (d.fk_expensereport = e.rowid)';
 		$sql .= ' WHERE e.fk_user_author = '.$fk_user;
-		if (!empty($this->id)) $sql .= ' AND d.rowid <> '.$this->id;
-		$sql .= ' AND d.fk_c_type_fees = '.$rule->fk_c_type_fees;
-		if ($mode == 'day' || $mode == 'EX_DAY') $sql .= ' AND d.date = \''.dol_print_date($this->date, '%Y-%m-%d').'\'';
-		elseif ($mode == 'mon' || $mode == 'EX_MON') $sql .= ' AND DATE_FORMAT(d.date, \'%Y-%m\') = \''.dol_print_date($this->date, '%Y-%m').'\''; // @todo DATE_FORMAT is forbidden
-		elseif ($mode == 'year' || $mode == 'EX_YEA') $sql .= ' AND DATE_FORMAT(d.date, \'%Y\') = \''.dol_print_date($this->date, '%Y').'\''; // @todo DATE_FORMAT is forbidden
+
+		if (! empty($this->id)) {
+			$sql .= ' AND d.rowid <> '.$this->id;
+		}
+
+		if ($rule->fk_c_type_fees > 0) {
+			$sql .= ' AND d.fk_c_type_fees = '.$rule->fk_c_type_fees;
+		}
+
+		if ($mode == 'day' || $mode == 'EX_DAY') {
+			$sql .= ' AND d.date = "'.dol_print_date($this->date, '%Y-%m-%d').'"';
+		} elseif ($mode == 'mon' || $mode == 'EX_MON') {
+			$sql .= ' ' . dolSqlDateFilter('d.date', 0, dol_print_date($this->date, '%m'), dol_print_date($this->date, '%Y'));
+		} elseif ($mode == 'year' || $mode == 'EX_YEA') {
+			$sql .= ' ' . dolSqlDateFilter('d.date', 0, 0, dol_print_date($this->date, '%Y'));
+		}
 
 		dol_syslog('ExpenseReportLine::getExpAmount');
 
 		$resql = $this->db->query($sql);
-		if ($resql)
-		{
+
+		if ($resql) {
 			$num = $this->db->num_rows($resql);
-			if ($num > 0)
-			{
+
+			if ($num > 0) {
 				$obj = $this->db->fetch_object($resql);
 				$amount = (double) $obj->total_amount;
 			}
 		} else {
-			dol_print_error($this->db);
+			$this->error = $this->db->lasterror;
 		}
 
 		return $amount + $this->total_ttc;
