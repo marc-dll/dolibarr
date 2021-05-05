@@ -27,7 +27,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/coreobject.class.php';
 /**
  *	Class to manage inventories
  */
-class ExpenseReportRule extends CoreObject
+class ExpenseReportRule extends CommonObject
 {
 	/**
 	 * @var string ID to identify managed object
@@ -92,7 +92,6 @@ class ExpenseReportRule extends CoreObject
 	 */
 	public $code_expense_rules_type;
 
-
 	/**
 	 * rule for all
 	 * @var int
@@ -100,11 +99,10 @@ class ExpenseReportRule extends CoreObject
 	public $is_for_all;
 
 	/**
-	 * entity
-	 * @var int
+	 * @var int  Does this object support multicompany module ?
+	 * 0=No test on entity, 1=Test with field entity, 'field@table'=Test with link by field@table
 	 */
-	public $entity;
-
+	public $ismultientitymanaged = 1;
 
 
 	/**
@@ -112,17 +110,17 @@ class ExpenseReportRule extends CoreObject
 	 * @var array
 	 */
 	public $fields = array(
-		'rowid'=>array('type'=>'integer', 'index'=>true)
-		,'dates'=>array('type'=>'date')
-		,'datee'=>array('type'=>'date')
-		,'amount'=>array('type'=>'double')
-		,'restrictive'=>array('type'=>'integer')
-		,'fk_user'=>array('type'=>'integer')
-		,'fk_usergroup'=>array('type'=>'integer')
-		,'fk_c_type_fees'=>array('type'=>'integer')
-		,'code_expense_rules_type'=>array('type'=>'string')
-		,'is_for_all'=>array('type'=>'integer')
-		,'entity'=>array('type'=>'integer')
+		'rowid'=>array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>1, 'visible'=>-2, 'noteditable'=>1, 'notnull'=> 1, 'index'=>1, 'position'=>1, 'comment'=>'Id', 'css'=>'left'),
+		'entity'=>array('type'=>'integer', 'label'=>'Entity', 'enabled'=>1, 'visible'=>0, 'notnull'=> 1, 'default'=>1, 'index'=>1, 'position'=>10),
+		'dates'=>array('type'=>'date', 'label'=>'ExpenseReportDateStart', 'enabled'=>1, 'visible'=>1, 'notnull'=>1, 'position'=>20),
+		'datee'=>array('type'=>'date', 'label'=>'ExpenseReportDateEnd', 'enabled'=>1, 'visible'=>1, 'notnull'=>1, 'position'=>25),
+		'amount'=>array('type'=>'double(24,8)', 'label'=>'ExpenseReportLimitAmount', 'enabled'=>1, 'visible'=>1, 'notnull'=>1, 'position'=>30),
+		'restrictive'=>array('type'=>'integer', 'label'=>'ExpenseReportRestrictive', 'enabled'=>1, 'visible'=>1, 'notnull'=>1, 'position'=>40),
+		'is_for_all'=>array('type'=>'integer', 'label'=>'Everybody', 'enabled'=>1, 'visible'=>1, 'notnull'=>1, 'position'=>50),
+		'fk_user'=>array('type'=>'integer:User:user/class/user.class.php', 'label'=>'User', 'enabled'=>1, 'visible'=>1, 'position'=>50),
+		'fk_usergroup'=>array('type'=>'integer:Usergroup:user/class/usergroup.class.php', 'label'=>'Usergroup', 'enabled'=>1, 'visible'=>1, 'position'=>50),
+		'fk_c_type_fees'=>array('type'=>'integer', 'label'=>'Type', 'enabled'=>1, 'visible'=>1, 'position'=>60),
+		'code_expense_rules_type'=>array('type'=>'string', 'label'=>'Code', 'enabled'=>1, 'visible'=>1, 'position'=>70),
 	);
 
 	/**
@@ -132,12 +130,55 @@ class ExpenseReportRule extends CoreObject
 	 */
 	public function __construct(DoliDB &$db)
 	{
-		global $conf;
+        $this->db = $db;
+	}
 
-		parent::__construct($db);
-		parent::init();
+    /**
+	 * Create object into database
+	 *
+	 * @param  User $user      User that creates
+	 * @param  bool $notrigger false=launch triggers after, true=disable triggers
+	 * @return int             <0 if KO, Id of created object if OK
+	 */
+	public function create(User $user, $notrigger = false)
+	{
+		return $this->createCommon($user, $notrigger);
+	}
 
-		$this->errors = array();
+	/**
+	 * Load object in memory from the database
+	 *
+	 * @param int    $id   Id object
+	 * @param string $ref  Ref
+	 * @return int         <0 if KO, 0 if not found, >0 if OK
+	 */
+	public function fetch($id, $ref = null)
+	{
+		return $this->fetchCommon($id, $ref);
+	}
+
+	/**
+	 * Update object into database
+	 *
+	 * @param  User $user      User that modifies
+	 * @param  bool $notrigger false=launch triggers after, true=disable triggers
+	 * @return int             <0 if KO, >0 if OK
+	 */
+	public function update(User $user, $notrigger = false)
+	{
+		return $this->updateCommon($user, $notrigger);
+	}
+
+	/**
+	 * Delete object in database
+	 *
+	 * @param User $user       User that deletes
+	 * @param bool $notrigger  false=launch triggers after, true=disable triggers
+	 * @return int             <0 if KO, >0 if OK
+	 */
+	public function delete(User $user, $notrigger = false)
+	{
+		return $this->deleteCommon($user, $notrigger);
 	}
 
 	/**

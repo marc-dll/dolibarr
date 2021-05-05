@@ -51,8 +51,8 @@ $fk_c_type_fees = GETPOST('fk_c_type_fees');
 $code_expense_rules_type = GETPOST('code_expense_rules_type');
 $dates = dol_mktime(12, 0, 0, GETPOST('startmonth'), GETPOST('startday'), GETPOST('startyear'));
 $datee = dol_mktime(12, 0, 0, GETPOST('endmonth'), GETPOST('endday'), GETPOST('endyear'));
-$amount = GETPOST('amount');
-$restrictive = GETPOST('restrictive');
+$amount = GETPOST('amount', 'int');
+$restrictive = GETPOST('restrictive', 'int');
 
 $object = new ExpenseReportRule($db);
 if (!empty($id))
@@ -94,7 +94,10 @@ if ($action == 'save')
 
 	if (empty($error))
 	{
-		$object->setValues($_POST);
+        $object->amount = $amount;
+        $object->restrictive = $restrictive;
+        $object->fk_c_type_fees = $fk_c_type_fees;
+        $object->code_expense_rules_type = $code_expense_rules_type;
 
 		if ($apply_to == 'U') {
 			$object->fk_user = (int) $fk_user;
@@ -115,12 +118,19 @@ if ($action == 'save')
 
 		$object->entity = $conf->entity;
 
-		$res = $object->create($user);
-		if ($res > 0) setEventMessages($langs->trans('ExpenseReportRuleSave'), null);
-		else dol_print_error($object->db);
+        if ($object->id > 0) {
+            $res = $object->update($user);
+        } else {
+            $res = $object->create($user);
+        }
+        
+		if ($res >= 0) {
+            setEventMessages($langs->trans('ExpenseReportRuleSave'), null);
+            header('Location: '.$_SERVER['PHP_SELF']);
+            exit;
+        }
 
-		header('Location: '.$_SERVER['PHP_SELF']);
-		exit;
+        dol_print_error($object->db);
 	}
 } elseif ($action == 'delete')
 {
