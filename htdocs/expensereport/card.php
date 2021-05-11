@@ -604,10 +604,7 @@ if (empty($reshook))
 
 				$object->generateDocument($model, $outputlangs, $hidedetails, $hidedesc, $hideref);
 			}
-		}
 
-		if ($result > 0)
-		{
 			// Send mail
 
   			// TO
@@ -1662,7 +1659,7 @@ if ($action == 'create')
 					$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"]."?id=".$id, $langs->trans("DeleteTrip"), $langs->trans("ConfirmDeleteTrip"), "confirm_delete", "", "", 1);
 				}
 
-				if ($action == 'validate')
+				if ($action == 'validate' && $user->rights->expensereport->approve && (empty($object->fk_user_validator) || $user->id == $object->fk_user_validator))
 				{
 					$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"]."?id=".$id, $langs->trans("ValideTrip"), $langs->trans("ConfirmValideTrip"), "confirm_approve", "", "", 1);
 				}
@@ -2645,13 +2642,12 @@ if ($action != 'create' && $action != 'edit')
 
 	if ($user->rights->expensereport->approve && $object->status == ExpenseReport::STATUS_VALIDATED)
 	{
-		//if($object->fk_user_validator==$user->id)
-		//{
+		if (empty($object->fk_user_validator) || $object->fk_user_validator == $user->id) {
 			// Validate
 			print '<div class="inline-block divButAction"><a class="butAction" href="'.$_SERVER["PHP_SELF"].'?action=validate&id='.$object->id.'">'.$langs->trans('Approve').'</a></div>';
 			// Deny
 			print '<div class="inline-block divButAction"><a class="butAction" href="'.$_SERVER["PHP_SELF"].'?action=refuse&id='.$object->id.'">'.$langs->trans('Deny').'</a></div>';
-		//}
+		}
 
 		if ($user->id == $object->fk_user_author || $user->id == $object->fk_user_valid)
 		{
