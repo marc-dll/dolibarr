@@ -193,6 +193,53 @@ if (empty($reshook))
 	$permissiontodelete = $user->rights->expensereport->supprimer;
 	$uploaddir = $conf->expensereport->dir_output;
 	include DOL_DOCUMENT_ROOT.'/core/actions_massactions.inc.php';
+
+	// Mass action sign (after a confirmation question, it is $action that is used).
+	if ($action == 'confirm_approve' && ! empty($user->rights->expensereport->approve)) {
+		if (GETPOST('confirm') == 'yes') {
+			$tmpexpensereport = new ExpenseReport($db);
+
+			$db->begin();
+			$error = 0;
+
+			foreach ($toselect as $checked) {
+				$res1 = $tmpexpensereport->fetch($checked);
+
+				if ($res1 <= 0) {
+					if ($res1 < 0) {
+						dol_print_error($db);
+						$error++;
+					}
+
+					setEventMessage($langs->trans('MassExpenseReportApprovalKO', '', $langs->transnoentitiesnoconv('ExpenseReportNotFound', $checked)), 'errors');
+					continue;
+				}
+
+				$res2 = $tmpexpensereport->setApproved($user);
+
+				if ($res2 < 0) {
+					dol_print_error($db);
+					$error++;
+					continue;
+				}
+
+				if (empty($res2)) {
+					setEventMessage($langs->trans('MassExpenseReportApprovalKO', $tmpexpensereport->ref, $langs->transnoentitiesnoconv($tmpexpensereport->error)), 'warnings');
+					continue;
+				}
+
+				setEventMessage($langs->trans('MassExpenseReportApprovalOK', $tmpexpensereport->ref));
+			}
+
+			if ($error) {
+				$db->rollback();
+				$action = '';
+				$massaction = 'approve';
+			} else {
+				$db->commit();
+			}
+		}
+	}
 }
 
 
@@ -313,6 +360,7 @@ if ($resql)
 		'builddoc'=>$langs->trans("PDFMerge"),
 		'presend'=>$langs->trans("SendByMail"),
 	);
+	if ($user->rights->expensereport->approve) $arrayofmassactions['approve'] = '<span class="fa fa-check paddingrightonly"></span>'.$langs->trans('Approve');
 	if ($user->rights->expensereport->supprimer) $arrayofmassactions['predelete'] = '<span class="fa fa-trash paddingrightonly"></span>'.$langs->trans("Delete");
 	if (in_array($massaction, array('presend', 'predelete'))) $arrayofmassactions = array();
 	$massactionbutton = $form->selectMassAction('', $arrayofmassactions);
@@ -376,7 +424,13 @@ if ($resql)
 	$modelmail = "expensereport";
 	$objecttmp = new ExpenseReport($db);
 	$trackid = 'exp'.$object->id;
-	include DOL_DOCUMENT_ROOT.'/core/tpl/massactions_pre.tpl.php';
+	include DOL_DOCUMENT_ROOT.'/core/tpl/massactions_pre.tpl.php'; // This reassigns $reshook
+
+	if (empty($reshook)) {
+		if ($massaction == 'approve') {
+			print $form->formconfirm($_SERVER["PHP_SELF"], $langs->trans('ConfirmExpenseReportMassApprove'), $langs->trans('ConfirmExpenseReportMassApproveQuestion'), 'confirm_approve', null, '', 0, 200, 500, 1);
+		}
+	}
 
 	if ($sall)
 	{

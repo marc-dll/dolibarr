@@ -1373,61 +1373,66 @@ class ExpenseReport extends CommonObject
 		}
 	}
 
-	/**
-	 * Set status to approved
-	 *
-	 * @param   User    $fuser      User
-	 * @param   int     $notrigger  Disable triggers
-	 * @return  int                 <0 if KO, 0 if nothing done, >0 if OK
-	 */
-	public function setApproved($fuser, $notrigger = 0)
-	{
-		$now = dol_now();
-		$error = 0;
+    /**
+     * Set status to approved
+     *
+     * @param   User    $fuser      User
+     * @param   int     $notrigger  Disable triggers
+     * @return  int                 <0 if KO, 0 if nothing done, >0 if OK
+     */
+    public function setApproved($fuser, $notrigger = 0)
+    {
+        if ($this->status != self::STATUS_VALIDATED) {
+            $this->error = 'ExpenseReportApprovalBadStatus';
+            dol_syslog(get_class($this)."::setApproved expensereport already with approve status", LOG_WARNING);
+            return 0;
+        }
 
-		// date approval
-		$this->date_approve = $now;
-		if ($this->status != self::STATUS_APPROVED)
-		{
-			$this->db->begin();
+        if (! empty($this->fk_user_validator) && $fuser->id != $this->fk_user_validator) {
+            $this->error = 'ExpenseReportNotApprobator';
+            return 0;
+        }
 
-			$sql = 'UPDATE '.MAIN_DB_PREFIX.$this->table_element;
-			$sql .= " SET ref = '".$this->db->escape($this->ref)."', fk_statut = ".self::STATUS_APPROVED.", fk_user_approve = ".$fuser->id.",";
-			$sql .= " date_approve='".$this->db->idate($this->date_approve)."'";
-			$sql .= ' WHERE rowid = '.$this->id;
-			if ($this->db->query($sql))
-			{
-				if (!$notrigger)
-				{
-					// Call trigger
-					$result = $this->call_trigger('EXPENSE_REPORT_APPROVE', $fuser);
+        if (empty($fuser->rights->expensereport->approve)) {
+            $this->error = 'ExpenseReportNoRightForApproval';
+            return 0;
+        }
 
-					if ($result < 0) {
-						$error++;
-					}
-					// End call triggers
-				}
+        $now = dol_now();
 
-				if (empty($error))
-				{
-					$this->db->commit();
-					return 1;
-				} else {
-					$this->db->rollback();
-					$this->error = $this->db->error();
-					return -2;
-				}
-			} else {
-				$this->db->rollback();
-				$this->error = $this->db->lasterror();
-				return -1;
-			}
-		} else {
-			dol_syslog(get_class($this)."::setApproved expensereport already with approve status", LOG_WARNING);
-		}
+        $this->db->begin();
 
-		return 0;
-	}
+        $sql = 'UPDATE '.MAIN_DB_PREFIX.$this->table_element;
+        $sql .= " SET ref = '".$this->db->escape($this->ref)."', fk_statut = ".self::STATUS_APPROVED.", fk_user_approve = ".$fuser->id.",";
+        $sql .= " date_approve='".$this->db->idate($now)."'";
+        $sql .= ' WHERE rowid = '.$this->id;
+
+        $resql = $this->db->query($sql);
+
+        if (!$resql) {
+            $this->db->rollback();
+            $this->error = $this->db->lasterror();
+            return -1;
+        }
+
+        if (!$notrigger) {
+            // Call trigger
+            $result = $this->call_trigger('EXPENSE_REPORT_APPROVE', $fuser);
+
+            if ($result < 0) {
+                $this->db->rollback();
+                return -2;
+            }
+            // End call triggers
+        }
+
+        // date approval
+        $this->date_approve = $now;
+        $this->fk_user_approve = $fuser->id;
+
+        $this->db->commit();
+        return 1;
+    }
 
 	/**
 	 * setDeny
