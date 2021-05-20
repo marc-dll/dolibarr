@@ -7912,13 +7912,13 @@ class Form
 	 * @param	string	$htmlname              name of HTML select list
 	 * @param	integer	$useempty              1=Add empty line
 	 * @param	array	$excludeid             id to exclude
-	 * @param	string	$target                htmlname of target select to bind event
-	 * @param	int		$default_selected      default category to select if fk_c_type_fees change = EX_KME
-	 * @param	array	$params                param to give
+	 * @param	string	$unused1               (unused)
+	 * @param	int		$unused2               (unused)
+	 * @param	array	$unused3               (unused)
 	 * @param	int		$info_admin			   Show the tooltip help picto to setup list
 	 * @return	string
 	 */
-	public function selectExpenseCategories($selected = '', $htmlname = 'fk_c_exp_tax_cat', $useempty = 0, $excludeid = array(), $target = '', $default_selected = 0, $params = array(), $info_admin = 1)
+	public function selectExpenseCategories($selected = '', $htmlname = 'fk_c_exp_tax_cat', $useempty = 0, $excludeid = array(), $unused1 = '', $unused2 = 0, $unused3 = array(), $info_admin = 1)
 	{
 		global $db, $langs, $user;
 
@@ -7942,57 +7942,6 @@ class Form
 			$out .= ajax_combobox('select_'.$htmlname);
 
 			if (!empty($htmlname) && $user->admin && $info_admin) $out .= ' '.info_admin($langs->trans("YouCanChangeValuesForThisListFromDictionarySetup"), 1);
-
-			if (!empty($target))
-			{
-				$sql = "SELECT c.id FROM ".MAIN_DB_PREFIX."c_type_fees as c WHERE c.code = 'EX_KME' AND c.active = 1";
-				$resql = $db->query($sql);
-				if ($resql)
-				{
-					if ($db->num_rows($resql) > 0)
-					{
-						$obj = $db->fetch_object($resql);
-						$out .= '<script>
-							$(function() {
-								$("select[name='.$target.']").on("change", function() {
-									var current_val = $(this).val();
-									if (current_val == '.$obj->id.') {';
-						if (!empty($default_selected) || !empty($selected)) $out .= '$("select[name='.$htmlname.']").val("'.($default_selected > 0 ? $default_selected : $selected).'");';
-
-						$out .= '
-										$("select[name='.$htmlname.']").change();
-									}
-								});
-
-								$("select[name='.$htmlname.']").change(function() {
-
-									if ($("select[name='.$target.']").val() == '.$obj->id.') {
-										// get price of kilometer to fill the unit price
-										var data = '.json_encode($params).';
-										data.fk_c_exp_tax_cat = $(this).val();
-
-										$.ajax({
-											method: "POST",
-											dataType: "json",
-											data: data,
-											url: "'.(DOL_URL_ROOT.'/expensereport/ajax/ajaxik.php').'",
-										}).done(function( data, textStatus, jqXHR ) {
-											console.log(data);
-											if (typeof data.up != "undefined") {
-												$("input[name=value_unit]").val(data.up);
-												$("select[name='.$htmlname.']").attr("title", data.title);
-											} else {
-												$("input[name=value_unit]").val("");
-												$("select[name='.$htmlname.']").attr("title", "");
-											}
-										});
-									}
-								});
-							});
-						</script>';
-					}
-				}
-			}
 		} else {
 			dol_print_error($db);
 		}

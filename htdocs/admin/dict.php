@@ -1203,7 +1203,7 @@ if ($id)
 			if ($fieldlist[$field] == 'newbymonth') { $valuetoshow = $langs->trans("NewByMonth"); }
 			if ($fieldlist[$field] == 'fk_tva') { $valuetoshow = $langs->trans("VAT"); }
 			if ($fieldlist[$field] == 'range_ik') { $valuetoshow = $langs->trans("RangeIk"); }
-			if ($fieldlist[$field] == 'fk_c_exp_tax_cat') { $valuetoshow = $langs->trans("CarCategory"); }
+			if ($fieldlist[$field] == 'fk_c_exp_tax_cat') { $valuetoshow = $langs->trans("VehicleCategory"); }
 			if ($fieldlist[$field] == 'revenuestamp_type') { $valuetoshow = $langs->trans('TypeOfRevenueStamp'); }
 			if ($fieldlist[$field] == 'use_default') { $valuetoshow = $langs->trans('Default'); $class = 'center'; }
 			if ($fieldlist[$field] == 'unit_type') { $valuetoshow = $langs->trans('TypeOfUnit'); }
@@ -1423,7 +1423,7 @@ if ($id)
 			if ($fieldlist[$field] == 'newbymonth') { $valuetoshow = $langs->trans("NewByMonth"); }
 			if ($fieldlist[$field] == 'fk_tva') { $valuetoshow = $langs->trans("VAT"); }
 			if ($fieldlist[$field] == 'range_ik') { $valuetoshow = $langs->trans("RangeIk"); }
-			if ($fieldlist[$field] == 'fk_c_exp_tax_cat') { $valuetoshow = $langs->trans("CarCategory"); }
+			if ($fieldlist[$field] == 'fk_c_exp_tax_cat') { $valuetoshow = $langs->trans("VehicleCategory"); }
 			if ($fieldlist[$field] == 'revenuestamp_type') { $valuetoshow = $langs->trans('TypeOfRevenueStamp'); }
 			if ($fieldlist[$field] == 'use_default') { $valuetoshow = $langs->trans('Default'); $cssprefix = 'center '; }
 			if ($fieldlist[$field] == 'unit_type') { $valuetoshow = $langs->trans('TypeOfUnit'); }

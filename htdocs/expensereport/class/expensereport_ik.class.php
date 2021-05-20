@@ -22,12 +22,11 @@
  *	\brief      File of class to manage expense ik
  */
 
-require_once DOL_DOCUMENT_ROOT.'/core/class/coreobject.class.php';
 
 /**
  *	Class to manage inventories
  */
-class ExpenseReportIk extends CoreObject
+class ExpenseReportIk extends CommonObject
 {
 	/**
 	 * @var string ID to identify managed object
@@ -68,6 +67,12 @@ class ExpenseReportIk extends CoreObject
 	 */
 	public $ikoffset;
 
+    /**
+     * Expense report vehicle range
+     * @var type stdClass
+     */
+    public $range = null;
+
 	/**
 	 * Attribute object linked with database
 	 * @var array
@@ -87,63 +92,94 @@ class ExpenseReportIk extends CoreObject
 	 */
 	public function __construct(DoliDB &$db)
 	{
-		global $conf;
-
-		parent::__construct($db);
-		parent::init();
-
-		$this->errors = array();
+        $this->db = $db;
 	}
-
-
-	/**
-	 * Return expense categories in array
+    /**
+	 * Create object into database
 	 *
-	 * @param	int		$mode	1=only active; 2=only inactive; other value return all
-	 * @return	array of category
+	 * @param  User $user      User that creates
+	 * @param  bool $notrigger false=launch triggers after, true=disable triggers
+	 * @return int             <0 if KO, Id of created object if OK
 	 */
-	public static function getTaxCategories($mode = 1)
+	public function create(User $user, $notrigger = false)
 	{
-		global $db;
-
-		$categories = array();
-
-		$sql = 'SELECT rowid, label, entity, active';
-		$sql .= ' FROM '.MAIN_DB_PREFIX.'c_exp_tax_cat';
-		$sql .= ' WHERE entity IN ('.getEntity('c_exp_tax_cat').')';
-		if ($mode == 1) $sql .= ' AND active = 1';
-		elseif ($mode == 2) $sql .= 'AND active = 0';
-
-		dol_syslog(get_called_class().'::getTaxCategories sql='.$sql, LOG_DEBUG);
-		$resql = $db->query($sql);
-		if ($resql)
-		{
-			while ($obj = $db->fetch_object($resql))
-			{
-				$categories[$obj->rowid] = $obj;
-			}
-		} else {
-			dol_print_error($db);
-		}
-
-		return $categories;
+		return $this->createCommon($user, $notrigger);
 	}
 
 	/**
-	 * Return an array of ranges for a user
+	 * Load object in memory from the database
 	 *
-	 * @param User  $userauthor         user author id
-	 * @param int   $fk_c_exp_tax_cat   category
-	 * @return boolean|array
+	 * @param int    $id   Id object
+	 * @param string $ref  Ref
+	 * @return int         <0 if KO, 0 if not found, >0 if OK
 	 */
-	public static function getRangeByUser(User $userauthor, $fk_c_exp_tax_cat)
+	public function fetch($id, $ref = null)
 	{
-		$default_range = (int) $userauthor->default_range; // if not defined, then 0
-		$ranges = self::getRangesByCategory($fk_c_exp_tax_cat);
+		$res = $this->fetchCommon($id, $ref);
 
-		// substract 1 because array start from 0
-		if (empty($ranges) || !isset($ranges[$default_range - 1])) return false;
-		else return $ranges[$default_range - 1];
+        if ($res <= 0) {
+            return $res;
+        }
+
+        $resRange = $this->fetchTaxRange();
+
+        if ($resRange < 0) {
+            return $resRange;
+        }
+
+        return $res;
+	}
+
+    /**
+     * @return int         <0 if KO, 0 if not found, >0 if OK
+     */
+    public function fetchTaxRange()
+    {
+        if ($this->fk_range <= 0) {
+            $this->range = null;
+            return 0;
+        }
+
+        $sql = 'SELECT rowid as id, fk_c_exp_tax_cat, range_ik, active';
+        $sql .= ' FROM '.MAIN_DB_PREFIX.'c_exp_tax_range';
+        $sql .= ' WHERE rowid = '.intval($this->fk_range);
+
+        $resql = $this->db->query($sql);
+
+        if (! $resql) {
+            $this->error = $this->db->lasterror;
+            return -1;
+        }
+
+        $this->range = $this->db->fetch_object($resql);
+
+        $this->db->free($resql);
+
+        return 1;
+    }
+
+	/**
+	 * Update object into database
+	 *
+	 * @param  User $user      User that modifies
+	 * @param  bool $notrigger false=launch triggers after, true=disable triggers
+	 * @return int             <0 if KO, >0 if OK
+	 */
+	public function update(User $user, $notrigger = false)
+	{
+		return $this->updateCommon($user, $notrigger);
+	}
+
+	/**
+	 * Delete object in database
+	 *
+	 * @param User $user       User that deletes
+	 * @param bool $notrigger  false=launch triggers after, true=disable triggers
+	 * @return int             <0 if KO, >0 if OK
+	 */
+	public function delete(User $user, $notrigger = false)
+	{
+		return $this->deleteCommon($user, $notrigger);
 	}
 
 	/**
@@ -223,36 +259,5 @@ class ExpenseReportIk extends CoreObject
 		}
 
 		return $ranges;
-	}
-
-	/**
-	 * Return the max number of range by a category
-	 *
-	 * @param int $default_c_exp_tax_cat id
-	 * @return int
-	 */
-	public static function getMaxRangeNumber($default_c_exp_tax_cat = 0)
-	{
-		global $db, $conf;
-
-		$sql = 'SELECT MAX(counted) as nbRange FROM (';
-		$sql .= ' SELECT COUNT(*) as counted';
-		$sql .= ' FROM '.MAIN_DB_PREFIX.'c_exp_tax_range r';
-		$sql .= ' WHERE r.entity IN (0, '.$conf->entity.')';
-		if ($default_c_exp_tax_cat > 0) $sql .= ' AND r.fk_c_exp_tax_cat = '.$default_c_exp_tax_cat;
-		$sql .= ' GROUP BY r.fk_c_exp_tax_cat';
-		$sql .= ') as counts';
-
-		dol_syslog(get_called_class().'::getMaxRangeNumber sql='.$sql, LOG_DEBUG);
-		$resql = $db->query($sql);
-		if ($resql)
-		{
-			$obj = $db->fetch_object($resql);
-			return $obj->nbRange;
-		} else {
-			dol_print_error($db);
-		}
-
-		return 0;
 	}
 }

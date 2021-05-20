@@ -134,4 +134,162 @@ class FormExpenseReport
 
 		return $out;
 	}
+
+    public function selectIkRange($selected = '', $htmlname = 'fk_c_exp_tax_range', $showempty = 0, $onlyactive = true, $fk_c_exp_tax_cat = 0, $returnarray = false)
+    {
+		global $langs;
+
+		$langs->load('trips');
+
+        $outArray = array();
+
+		$sql = "SELECT r.rowid, c.label, r.range_ik, ik.coef, ik.ikoffset, r.fk_c_exp_tax_cat";
+        $sql .= " FROM ".MAIN_DB_PREFIX."expensereport_ik ik";
+        $sql .= " INNER JOIN ".MAIN_DB_PREFIX."c_exp_tax_range r ON r.rowid = ik.fk_range";
+        $sql .= " INNER JOIN ".MAIN_DB_PREFIX."c_exp_tax_cat c ON c.rowid = ik.fk_c_exp_tax_cat AND c.rowid = r.fk_c_exp_tax_cat";
+        $sql .= " WHERE 1 = 1";
+
+		if ($onlyactive) {
+            $sql .= " AND ik.active != 0 AND r.active != 0 AND c.active != 0";
+        }
+
+        if ($fk_c_exp_tax_cat > 0) {
+            $sql .= " AND c.rowid = ".intval($fk_c_exp_tax_cat);
+        }
+
+		$sql .= " ORDER BY c.rowid ASC, r.range_ik ASC";
+
+		$resql = $this->db->query($sql);
+
+        $ranges = array();
+
+		if ($resql) {
+			$num = $this->db->num_rows($resql);
+
+            for ($i = 0; $i < $num; $i++) {
+				$obj = $this->db->fetch_object($resql);
+
+                $ranges[] = $obj;
+			}
+
+            $this->db->free($resql);
+		}
+
+		$out = '<select class="flat minwidth75imp maxwidth150" name="'.$htmlname.'" id="'.$htmlname.'">';
+
+        if ($showempty) {
+            if ($returnarray) {
+                $outArray[-1] = '&nbsp;';
+            } else {
+                $out .= '<option value="-1"';
+
+                if ($selected == -1) {
+                    $out .= ' selected';
+                }
+
+                $out .= '>&nbsp;</option>';
+            }
+        }
+
+        foreach ($ranges as $i => $range) {
+            $label = '';
+
+            if ($fk_c_exp_tax_cat <= 0) {
+                $label .= $langs->trans($range->label) . ' - ';
+            }
+
+            if (isset($ranges[$i + 1]) && $ranges[$i + 1]->fk_c_exp_tax_cat == $range->fk_c_exp_tax_cat) {
+                $label .= $langs->trans('expenseReportRangeFromTo', $range->range_ik, $ranges[$i + 1]->range_ik);
+            } else {
+                $label .= $langs->trans('expenseReportRangeMoreThan', $range->range_ik);
+            }
+
+            if ($returnarray) {
+                $outArray[$range->rowid] = array(
+                    'label' => $label,
+                    'data' => array(
+                        'offset' => $range->ikoffset,
+                        'coef' => $range->coef
+                    )
+                );
+            } else {
+                $out .= '<option value="'.$range->rowid.'"';
+                $out .= ' data-offset="'.$range->ikoffset.'"';
+                $out .= ' data-coef="'.$range->coef.'"';
+
+                if ($range->rowid == $selected) {
+                    $out .= ' selected';
+                }
+
+                $out .= '>'.$label.'</option>';
+            }
+        }
+
+        if ($returnarray) {
+            return $outArray;
+        }
+
+		$out .= '</select>';
+		$out .= ajax_combobox($htmlname);
+
+		return $out;
+    }
+
+    /**
+     * @param int $fk_c_exp_tax_range Id of mileage range
+     * @return string
+     */
+    public function getIkRangeLabel($fk_c_exp_tax_range)
+    {
+        global $langs;
+
+        $sqlStart = "SELECT r.rowid, c.label, r.range_ik, r.fk_c_exp_tax_cat";
+        $sqlStart .= " FROM ".MAIN_DB_PREFIX."c_exp_tax_range r";
+        $sqlStart .= " INNER JOIN ".MAIN_DB_PREFIX."c_exp_tax_cat c ON c.rowid = r.fk_c_exp_tax_cat";
+        $sqlStart .= " WHERE r.rowid = ".intval($fk_c_exp_tax_range);
+
+        $resqlStart = $this->db->query($sqlStart);
+
+        if (! $resqlStart) {
+            $this->error = $this->db->lasterror;
+            return '';
+        }
+
+        if ($this->db->num_rows($resqlStart) == 0) {
+            $this->error = $langs->trans('ErrorRecordNotFound');
+            $this->db->free($resqlStart);
+            return '';
+        }
+
+        $objStart = $this->db->fetch_object($resqlStart);
+
+        $this->db->free($resqlStart);
+
+        $sqlEnd = "SELECT r.rowid, c.label, r.range_ik, r.fk_c_exp_tax_cat";
+        $sqlEnd .= " FROM ".MAIN_DB_PREFIX."c_exp_tax_range r";
+        $sqlEnd .= " INNER JOIN ".MAIN_DB_PREFIX."c_exp_tax_cat c ON c.rowid = r.fk_c_exp_tax_cat";
+        $sqlEnd .= " WHERE r.fk_c_exp_tax_cat = ".intval($objStart->fk_c_exp_tax_cat);
+        $sqlEnd .= " AND r.range_ik > ".floatval($objStart->range_ik);
+        $sqlEnd .= " ORDER BY r.range_ik ASC";
+        $sqlEnd .= " LIMIT 1";
+
+        $resqlEnd = $this->db->query($sqlEnd);
+
+        if (! $resqlEnd) {
+            $this->error = $this->db->lasterror;
+            return '';
+        }
+
+        if ($this->db->num_rows($resqlEnd) == 0) {
+            $out = $langs->trans('expenseReportRangeMoreThan', $objStart->range_ik);
+        } else {
+            $objEnd = $this->db->fetch_object($resqlEnd);
+
+            $out = $langs->trans('expenseReportRangeFromTo', $objStart->range_ik, $objEnd->range_ik);;
+        }
+
+        $this->db->free($resqlEnd);
+
+        return $out;
+    }
 }

@@ -54,8 +54,16 @@ if ($action == 'updateik')
 		if ($result < 0) dol_print_error('', $expIk->error, $expIk->errors);
 	}
 
-	$expIk->setValues($_POST);
-	$result = $expIk->create($user);
+    $expIk->fk_c_exp_tax_cat = $fk_c_exp_tax_cat;
+    $expIk->fk_range = $fk_range;
+    $expIk->ikoffset = $ikoffset;
+    $expIk->coef = $coef;
+
+    if ($expIk->id > 0) {
+        $result = $expIk->update($user);
+    } else {
+        $result = $expIk->create($user);
+    }
 
 	if ($result > 0) {
 		setEventMessages('SetupSaved', null, 'mesgs');

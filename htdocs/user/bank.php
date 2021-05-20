@@ -199,17 +199,38 @@ if ($action == 'setpersonal_mobile') {
 }
 
 // update default_c_exp_tax_cat
-if ($action == 'setdefault_c_exp_tax_cat') {
-	$object->default_c_exp_tax_cat = GETPOST('default_c_exp_tax_cat', 'int');
+if ($action == 'setdefault_c_exp_tax_cat' && !$cancel) {
+    $newDefaultVehicleCategory = GETPOST('default_c_exp_tax_cat', 'int');
+
+    if ($newDefaultVehicleCategory != $object->default_c_exp_tax_cat) {
+        $object->default_range = -1;
+    }
+
+	$object->default_c_exp_tax_cat = $newDefaultVehicleCategory;
 	$result = $object->update($user);
-	if ($result < 0) setEventMessages($object->error, $object->errors, 'errors');
+	if ($result < 0) {
+        setEventMessages($object->error, $object->errors, 'errors');
+        $action = 'editdefault_c_exp_tax_cat';
+    }
 }
 
 // update default range
-if ($action == 'setdefault_range') {
-	$object->default_range = GETPOST('default_range', 'int');
-	$result = $object->update($user);
-	if ($result < 0) setEventMessages($object->error, $object->errors, 'errors');
+if ($action == 'setdefault_range' && !$cancel) {
+    $newDefaultRange = GETPOST('default_range', 'int');
+
+    $vehicleCategoryOfRange = dol_getIdFromCode($db, $newDefaultRange, 'c_exp_tax_range', 'rowid', 'fk_c_exp_tax_cat');
+
+    if ($newDefaultRange > 0 && $vehicleCategoryOfRange > 0 && $vehicleCategoryOfRange != $object->default_c_exp_tax_cat) {
+        setEventMessage('SelectedIkRangeNotForDefaultVehicleCategory', 'errors');
+        $action = 'editdefault_range';
+    } else {
+        $object->default_range = $newDefaultRange;
+        $result = $object->update($user);
+        if ($result < 0) {
+            setEventMessages($object->error, $object->errors, 'errors');
+            $action = 'editdefault_range';
+        }
+    }
 }
 
 
@@ -300,7 +321,7 @@ if ($action != 'edit' && $action != 'create')		// If not bank account yet, $acco
 			$ret .= '</form>';
 			print $ret;
 		} else {
-			print dol_getIdFromCode($db, $object->default_c_exp_tax_cat, 'c_exp_tax_cat', 'rowid', 'label');
+			print $langs->trans(dol_getIdFromCode($db, $object->default_c_exp_tax_cat, 'c_exp_tax_cat', 'rowid', 'label'));
 			//print $form->editfieldval("DefaultCategoryCar", 'default_c_exp_tax_cat', $object->default_c_exp_tax_cat, $object, $user->rights->user->user->creer, 'string', ($object->default_c_exp_tax_cat != '' ? $object->default_c_exp_tax_cat : ''));
 		}
 		print '</td>';
@@ -308,21 +329,22 @@ if ($action != 'edit' && $action != 'create')		// If not bank account yet, $acco
 
 		print '<tr class="nowrap">';
 		print '<td>';
-		print $form->editfieldkey("DefaultRangeNumber", 'default_range', $object->default_range, $object, $user->rights->user->user->creer);
+		print $form->editfieldkey("DefaultRangeNumber", 'default_range', $object->default_c_exp_tax_cat, $object, $user->rights->user->user->creer);
 		print '</td><td>';
+        require_once DOL_DOCUMENT_ROOT.'/core/class/html.formexpensereport.class.php';
+        $formExpenseReport = new FormExpenseReport($db);
 		if ($action == 'editdefault_range') {
 			$ret = '<form method="post" action="'.$_SERVER["PHP_SELF"].($moreparam ? '?'.$moreparam : '').'">';
 			$ret .= '<input type="hidden" name="action" value="setdefault_range">';
 			$ret .= '<input type="hidden" name="token" value="'.newToken().'">';
 			$ret .= '<input type="hidden" name="id" value="'.$object->id.'">';
-			$maxRangeNum = ExpenseReportIk::getMaxRangeNumber($object->default_c_exp_tax_cat);
-			$ret .= $form->selectarray('default_range', range(0, $maxRangeNum), $object->default_range);
+            $ret .= $formExpenseReport->selectIkRange($object->default_range, 'default_range', 1, true, $object->default_c_exp_tax_cat);
 			$ret .= '<input type="submit" class="button" name="modify" value="'.$langs->trans("Modify").'"> ';
 			$ret .= '<input type="submit" class="button button-cancel" name="cancel" value="'.$langs->trans("Cancel").'">';
 			$ret .= '</form>';
 			print $ret;
 		} else {
-			print $object->default_range;
+			print $formExpenseReport->getIkRangeLabel($object->default_range);
 		}
 		print '</td>';
 		print '</tr>';

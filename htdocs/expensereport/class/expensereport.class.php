@@ -59,7 +59,15 @@ class ExpenseReport extends CommonObject
 	 */
 	public $picto = 'trip';
 
+    /**
+     * @var ExpenseReportLine[]
+     */
 	public $lines = array();
+
+    /**
+     * @var ExpenseReportLine
+     */
+    public $line;
 
 	public $date_debut;
 
@@ -1025,7 +1033,7 @@ class ExpenseReport extends CommonObject
 		$this->lines = array();
 
 		$sql = ' SELECT de.rowid, de.comments, de.qty, de.value_unit, de.date, de.rang,';
-		$sql .= ' de.'.$this->fk_element.', de.fk_c_type_fees, de.fk_c_exp_tax_cat, de.fk_projet as fk_project, de.tva_tx, de.fk_ecm_files,';
+		$sql .= ' de.'.$this->fk_element.', de.fk_c_type_fees, de.fk_c_exp_tax_cat, de.fk_c_exp_tax_range, de.fk_projet as fk_project, de.tva_tx, de.fk_ecm_files,';
 		$sql .= ' de.total_ht, de.total_tva, de.total_ttc,';
 		$sql .= ' ctf.code as code_type_fees, ctf.label as libelle_type_fees,';
 		$sql .= ' p.ref as ref_projet, p.title as title_projet';
@@ -1062,6 +1070,7 @@ class ExpenseReport extends CommonObject
 				$deplig->fk_expensereport = $objp->fk_expensereport;
 				$deplig->fk_c_type_fees   = $objp->fk_c_type_fees;
 				$deplig->fk_c_exp_tax_cat = $objp->fk_c_exp_tax_cat;
+				$deplig->fk_c_exp_tax_range = $objp->fk_c_exp_tax_range;
 				$deplig->fk_projet        = $objp->fk_project; // deprecated
 				$deplig->fk_project       = $objp->fk_project;
 				$deplig->fk_ecm_files     = $objp->fk_ecm_files;
@@ -1797,12 +1806,13 @@ class ExpenseReport extends CommonObject
 	 * @param    string      $date                     Date
 	 * @param    string      $comments                 Description
 	 * @param    int         $fk_project               Project id
-	 * @param    int         $fk_c_exp_tax_cat         Car category id
+	 * @param    int         $fk_c_exp_tax_cat         Vehicle category id
 	 * @param    int         $type                     Type line
 	 * @param    int         $fk_ecm_files             Id of ECM file to link to this expensereport line
+	 * @param    int         $fk_c_exp_tax_range       Id of mileage range
 	 * @return   int                                   <0 if KO, >0 if OK
 	 */
-	public function addline($qty = 0, $up = 0, $fk_c_type_fees = 0, $vatrate = 0, $date = '', $comments = '', $fk_project = 0, $fk_c_exp_tax_cat = 0, $type = 0, $fk_ecm_files = 0)
+	public function addline($qty = 0, $up = 0, $fk_c_type_fees = 0, $vatrate = 0, $date = '', $comments = '', $fk_project = 0, $fk_c_exp_tax_cat = 0, $type = 0, $fk_ecm_files = 0, $fk_c_exp_tax_range = 0)
 	{
 		global $conf, $langs, $mysoc;
 
@@ -1813,6 +1823,7 @@ class ExpenseReport extends CommonObject
 			if (empty($qty)) $qty = 0;
 			if (empty($fk_c_type_fees) || $fk_c_type_fees < 0) $fk_c_type_fees = 0;
 			if (empty($fk_c_exp_tax_cat) || $fk_c_exp_tax_cat < 0) $fk_c_exp_tax_cat = 0;
+			if (empty($fk_c_exp_tax_range) || $fk_c_exp_tax_range < 0) $fk_c_exp_tax_range = 0;
 			if (empty($vatrate) || $vatrate < 0) $vatrate = 0;
 			if (empty($date)) $date = '';
 			if (empty($fk_project)) $fk_project = 0;
@@ -1854,13 +1865,20 @@ class ExpenseReport extends CommonObject
 			$this->line->date = $date;
 			$this->line->fk_c_type_fees = $fk_c_type_fees;
 			$this->line->fk_c_exp_tax_cat = $fk_c_exp_tax_cat;
+			$this->line->fk_c_exp_tax_range = $fk_c_exp_tax_range;
 			$this->line->comments = $comments;
 			$this->line->fk_projet = $fk_project; // deprecated
 			$this->line->fk_project = $fk_project;
 
 			$this->line->fk_ecm_files = $fk_ecm_files;
 
-			$this->applyOffset();
+			$offsetApplied = $this->applyOffset();
+
+            if (! $offsetApplied && empty($this->line->total_ttc)) {
+                $this->db->rollback();
+                return 0;
+            }
+
 			$rulesPassed = $this->checkRules($type, $seller);
 
 			if (! $rulesPassed && empty($this->line->total_ttc)) {
@@ -1944,14 +1962,13 @@ class ExpenseReport extends CommonObject
 
 				$rule_warning_message_tab[] = $langs->trans($error, $rule->id, $formatted_amount_to_test, $formatted_rule_amount, $limit);
 
-				$this->error = $error;
-				$this->errors[] = $this->error;
-
 				// No break, we sould test if another rule is violated
 			}
 		}
 
-		$this->line->rule_warning_message = implode('\n', $rule_warning_message_tab);
+        if (! empty($rule_warning_message_tab)) {
+            $this->error = implode('\n', $rule_warning_message_tab);
+        }
 
 		if ($violation > 0) {
 			$tmp = calcul_price_total($this->line->qty, $new_current_total_ttc / $this->line->qty, 0, $this->line->vatrate, 0, 0, 0, 'TTC', 0, $type, $seller);
@@ -1962,7 +1979,9 @@ class ExpenseReport extends CommonObject
 			$this->line->total_tva = $tmp[1];
 
 			return false;
-		} else return true;
+		}
+
+        return true;
 	}
 
 	/**
@@ -1974,43 +1993,70 @@ class ExpenseReport extends CommonObject
 	{
 		global $conf;
 
-		if (empty($conf->global->MAIN_USE_EXPENSE_IK)) return false;
+		if (empty($conf->global->MAIN_USE_EXPENSE_IK)) {
+            return false;
+        }
 
-		$userauthor = new User($this->db);
-		if ($userauthor->fetch($this->fk_user_author) <= 0)
-		{
-			$this->error = 'ErrorCantFetchUser';
-			$this->errors[] = 'ErrorCantFetchUser';
-			return false;
-		}
+        if (empty($this->line->qty)) {
+            return false;
+        }
 
-		$range = ExpenseReportIk::getRangeByUser($userauthor, $this->line->fk_c_exp_tax_cat);
+        if ($this->line->fk_c_exp_tax_cat <= 0) {
+            return false;
+        }
 
-		if (empty($range))
-		{
+        // If the range and the amount have been set, no need to redo the calculation
+        if ($this->line->fk_c_exp_tax_range > 0 && ! empty($this->line->value_unit)) {
+            return false;
+        }
+
+        $ranges = ExpenseReportIk::getRangesByCategory($this->line->fk_c_exp_tax_cat);
+
+		if (empty($ranges)) {
 			$this->error = 'ErrorNoRangeAvailable';
 			$this->errors[] = 'ErrorNoRangeAvailable';
 			return false;
 		}
 
-		if (!empty($conf->global->MAIN_EXPENSE_APPLY_ENTIRE_OFFSET)) $ikoffset = $range->ikoffset;
-		else $ikoffset = $range->ikoffset / 12; // The amount of offset is a global value for the year
+        $distanceBefore = $this->getIkDistanceInYear();
+        $distanceAfter = $distanceBefore + $this->line->qty;
 
-		// Test if ikoffset has been applied for the current month
-		if (!$this->offsetAlreadyGiven())
-		{
-			$new_up = $range->coef + ($ikoffset / $this->line->qty);
-			$tmp = calcul_price_total($this->line->qty, $new_up, 0, $this->line->vatrate, 0, 0, 0, 'TTC', 0, $type, $seller);
+        $rangeBefore = null;
+        $rangeAfter = null;
 
-			$this->line->value_unit = $tmp[5];
-			$this->line->total_ttc = $tmp[2];
-			$this->line->total_ht = $tmp[0];
-			$this->line->total_tva = $tmp[1];
+        foreach ($ranges as $range) {
+            if ($range->range->range_ik <= $distanceBefore && (is_null($rangeBefore) || $range->range->range_ik > $rangeBefore->range->range_ik)) {
+                $rangeBefore = $range;
+            }
 
-			return true;
-		}
+            if ($range->range->range_ik <= $distanceAfter && (is_null($rangeAfter) || $range->range->range_ik > $rangeAfter->range->range_ik)) {
+                $rangeAfter = $range;
+            }
+        }
 
-		return false;
+        if (is_null($rangeBefore) || is_null($rangeAfter)) {
+            $this->error = 'ExpenseReportIkCategoryNotFound';
+            return false;
+        }
+
+        if ($rangeBefore->range->range_ik == $rangeAfter->range->range_ik) {
+            $unit_price = $rangeBefore->coef;
+        } else {
+            // We interpolate the unit price from the difference between the yearly amount before and after applying this line
+            $amountBefore = $rangeBefore->ikoffset + $distanceBefore * $rangeBefore->coef;
+            $amountAfter = $rangeAfter->ikoffset + $distanceAfter * $rangeAfter->coef;
+
+            $unit_price = ($amountAfter - $amountBefore) / $this->line->qty;
+        }
+
+        $tmp = calcul_price_total($this->line->qty, $unit_price, 0, $this->line->vatrate, 0, 0, 0, 'TTC', 0, 1);
+
+        $this->line->value_unit = $tmp[5];
+        $this->line->total_ttc = $tmp[2];
+        $this->line->total_ht = $tmp[0];
+        $this->line->total_tva = $tmp[1];
+
+        return true;
 	}
 
 	/**
@@ -2022,7 +2068,7 @@ class ExpenseReport extends CommonObject
 	{
 		$sql = 'SELECT e.rowid FROM '.MAIN_DB_PREFIX.'expensereport e';
 		$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'expensereport_det d ON (e.rowid = d.fk_expensereport)';
-		$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'c_type_fees f ON (d.fk_c_type_fees = f.id AND f.code = "EX_KME")';
+		$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'c_type_fees f ON (d.fk_c_type_fees = f.id AND f.code = \'EX_KME\')';
 		$sql .= ' WHERE e.fk_user_author = '.(int) $this->fk_user_author;
 		$sql .= ' AND YEAR(d.date) = "'.dol_print_date($this->line->date, '%Y').'" AND MONTH(d.date) = "'.dol_print_date($this->line->date, '%m').'"';
 		if (!empty($this->line->id)) $sql .= ' AND d.rowid <> '.$this->line->id;
@@ -2040,6 +2086,35 @@ class ExpenseReport extends CommonObject
 		return false;
 	}
 
+    /**
+     * @return float
+     */
+    public function getIkDistanceInYear()
+    {
+        require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
+
+        $sql = 'SELECT SUM(ed.qty) as distance';
+        $sql .= ' FROM '.MAIN_DB_PREFIX.'expensereport_det ed';
+        $sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'c_type_fees tf ON tf.id = ed.fk_c_type_fees';
+        $sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'c_exp_tax_cat etc ON etc.rowid = ed.fk_c_exp_tax_cat';
+        $sql .= ' WHERE tf.code = \'EX_KME\'';
+        $sql .= ' AND ed.rowid != ' . intval($this->line->id);
+        $sql .= ' '.dolSqlDateFilter('ed.date', 0, 0, dol_print_date($this->line->date, '%Y'));
+        $sql .= ' AND ed.fk_c_exp_tax_cat = '.intval($this->line->fk_c_exp_tax_cat);
+
+        $resql = $this->db->query($sql);
+
+        if (! $resql) {
+            dol_print_error($this->db);
+            $this->error = $this->db->lasterror;
+            return -1;
+        }
+
+        $obj = $this->db->fetch_object($resql);
+
+        return floatval($obj->distance);
+    }
+
 	/**
 	 * Update an expense report line
 	 *
@@ -2054,9 +2129,10 @@ class ExpenseReport extends CommonObject
 	 * @param   int         $expensereport_id       Expense report id
 	 * @param   int         $fk_c_exp_tax_cat       Id of category of car
 	 * @param   int         $fk_ecm_files           Id of ECM file to link to this expensereport line
+	 * @param   int         $fk_c_exp_tax_range     Id of mileage range
 	 * @return  int                                 <0 if KO, >0 if OK
 	 */
-	public function updateline($rowid, $type_fees_id, $projet_id, $vatrate, $comments, $qty, $value_unit, $date, $expensereport_id, $fk_c_exp_tax_cat = 0, $fk_ecm_files = 0)
+	public function updateline($rowid, $type_fees_id, $projet_id, $vatrate, $comments, $qty, $value_unit, $date, $expensereport_id, $fk_c_exp_tax_cat = 0, $fk_ecm_files = 0, $fk_c_exp_tax_range = 0)
 	{
 		global $user, $mysoc;
 
@@ -2099,6 +2175,7 @@ class ExpenseReport extends CommonObject
 			$this->line->fk_expensereport = $expensereport_id;
 			$this->line->fk_c_type_fees  = $type_fees_id;
 			$this->line->fk_c_exp_tax_cat = $fk_c_exp_tax_cat;
+			$this->line->fk_c_exp_tax_range = $fk_c_exp_tax_range;
 			$this->line->fk_projet       = $projet_id; // deprecated
 			$this->line->fk_project      = $projet_id;
 
@@ -2625,7 +2702,7 @@ class ExpenseReportLine
 	 */
 	public function fetch($rowid)
 	{
-		$sql = 'SELECT fde.rowid, fde.fk_expensereport, fde.fk_c_type_fees, fde.fk_c_exp_tax_cat, fde.fk_projet as fk_project, fde.date,';
+		$sql = 'SELECT fde.rowid, fde.fk_expensereport, fde.fk_c_type_fees, fde.fk_c_exp_tax_cat, fde.fk_c_exp_tax_range, fde.fk_projet as fk_project, fde.date,';
 		$sql .= ' fde.tva_tx as vatrate, fde.vat_src_code, fde.comments, fde.qty, fde.value_unit, fde.total_ht, fde.total_tva, fde.total_ttc, fde.fk_ecm_files,';
 		$sql .= ' ctf.code as type_fees_code, ctf.label as type_fees_libelle,';
 		$sql .= ' pjt.rowid as projet_id, pjt.title as projet_title, pjt.ref as projet_ref';
@@ -2651,6 +2728,7 @@ class ExpenseReportLine
 			$this->value_unit = $objp->value_unit;
 			$this->fk_c_type_fees = $objp->fk_c_type_fees;
 			$this->fk_c_exp_tax_cat = $objp->fk_c_exp_tax_cat;
+			$this->fk_c_exp_tax_range = $objp->fk_c_exp_tax_range;
 			$this->fk_projet = $objp->fk_project; // deprecated
 			$this->fk_project = $objp->fk_project;
 			$this->type_fees_code = $objp->type_fees_code;
@@ -2690,13 +2768,18 @@ class ExpenseReportLine
 		if (empty($this->value_unit)) $this->value_unit = 0;
 		$this->qty = price2num($this->qty);
 		$this->vatrate = price2num($this->vatrate);
-		if (empty($this->fk_c_exp_tax_cat)) $this->fk_c_exp_tax_cat = 0;
+		if (empty($this->fk_c_exp_tax_cat)) {
+            $this->fk_c_exp_tax_cat = 0;
+        }
+		if (empty($this->fk_c_exp_tax_range)) {
+            $this->fk_c_exp_tax_range = 0;
+        }
 
 		$this->db->begin();
 
 		$sql = 'INSERT INTO '.MAIN_DB_PREFIX.'expensereport_det';
 		$sql .= ' (fk_expensereport, fk_c_type_fees, fk_projet,';
-		$sql .= ' tva_tx, vat_src_code, comments, qty, value_unit, total_ht, total_tva, total_ttc, date, rule_warning_message, fk_c_exp_tax_cat, fk_ecm_files)';
+		$sql .= ' tva_tx, vat_src_code, comments, qty, value_unit, total_ht, total_tva, total_ttc, date, rule_warning_message, fk_c_exp_tax_cat, fk_c_exp_tax_range, fk_ecm_files)';
 		$sql .= " VALUES (".$this->db->escape($this->fk_expensereport).",";
 		$sql .= " ".$this->db->escape($this->fk_c_type_fees).",";
 		$sql .= " ".$this->db->escape((!empty($this->fk_project) && $this->fk_project > 0) ? $this->fk_project : ((!empty($this->fk_projet) && $this->fk_projet > 0) ? $this->fk_projet : 'null')).",";
@@ -2711,6 +2794,7 @@ class ExpenseReportLine
 		$sql .= " '".$this->db->idate($this->date)."',";
 		$sql .= " ".(empty($this->rule_warning_message) ? 'null' : "'".$this->db->escape($this->rule_warning_message)."'").",";
 		$sql .= " ".$this->db->escape($this->fk_c_exp_tax_cat).",";
+		$sql .= " ".$this->db->escape($this->fk_c_exp_tax_range).",";
 		$sql .= " ".($this->fk_ecm_files > 0 ? $this->fk_ecm_files : 'null');
 		$sql .= ")";
 
@@ -2816,7 +2900,12 @@ class ExpenseReportLine
 		$this->comments = trim($this->comments);
 		$this->vatrate = price2num($this->vatrate);
 		$this->value_unit = price2num($this->value_unit);
-		if (empty($this->fk_c_exp_tax_cat)) $this->fk_c_exp_tax_cat = 0;
+		if (empty($this->fk_c_exp_tax_cat)) {
+            $this->fk_c_exp_tax_cat = 0;
+        }
+		if (empty($this->fk_c_exp_tax_range)) {
+            $this->fk_c_exp_tax_range = 0;
+        }
 
 		$this->db->begin();
 
@@ -2833,6 +2922,7 @@ class ExpenseReportLine
 		$sql .= ",vat_src_code='".$this->db->escape($this->vat_src_code)."'";
 		$sql .= ",rule_warning_message='".$this->db->escape($this->rule_warning_message)."'";
 		$sql .= ",fk_c_exp_tax_cat=".$this->db->escape($this->fk_c_exp_tax_cat);
+		$sql .= ",fk_c_exp_tax_range=".$this->db->escape($this->fk_c_exp_tax_range);
 		$sql .= ",fk_ecm_files=".($this->fk_ecm_files > 0 ? $this->fk_ecm_files : 'null');
 		if ($this->fk_c_type_fees) $sql .= ",fk_c_type_fees=".$this->db->escape($this->fk_c_type_fees);
 		else $sql .= ",fk_c_type_fees=null";
