@@ -1967,7 +1967,7 @@ class ExpenseReport extends CommonObject
 		}
 
         if (! empty($rule_warning_message_tab)) {
-            $this->error = implode('\n', $rule_warning_message_tab);
+            $this->error = implode('<br />', $rule_warning_message_tab);
         }
 
 		if ($violation > 0) {
