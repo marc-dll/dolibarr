@@ -1872,18 +1872,18 @@ class ExpenseReport extends CommonObject
 
 			$this->line->fk_ecm_files = $fk_ecm_files;
 
-			$offsetApplied = $this->applyOffset();
+			$ikRes = $this->applyIkCalculation();
 
-            if (! $offsetApplied && empty($this->line->total_ttc)) {
+            if (! $ikRes) {
                 $this->db->rollback();
-                return 0;
+                return -1;
             }
 
 			$rulesPassed = $this->checkRules($type, $seller);
 
 			if (! $rulesPassed && empty($this->line->total_ttc)) {
 				$this->db->rollback();
-				return 0;
+				return -1;
 			}
 
 			$result = $this->line->insert(0, true);
@@ -1989,25 +1989,25 @@ class ExpenseReport extends CommonObject
 	 *
 	 * @return boolean		true=applied, false=not applied
 	 */
-	public function applyOffset()
+	public function applyIkCalculation()
 	{
 		global $conf;
 
 		if (empty($conf->global->MAIN_USE_EXPENSE_IK)) {
-            return false;
+            return true;
         }
 
         if (empty($this->line->qty)) {
-            return false;
+            return true;
         }
 
         if ($this->line->fk_c_exp_tax_cat <= 0) {
-            return false;
+            return true;
         }
 
         // If the range and the amount have been set, no need to redo the calculation
         if ($this->line->fk_c_exp_tax_range > 0 && ! empty($this->line->value_unit)) {
-            return false;
+            return true;
         }
 
         $ranges = ExpenseReportIk::getRangesByCategory($this->line->fk_c_exp_tax_cat);
@@ -2057,33 +2057,6 @@ class ExpenseReport extends CommonObject
         $this->line->total_tva = $tmp[1];
 
         return true;
-	}
-
-	/**
-	 * If the sql find any rows then the ikoffset is already given (ikoffset is applied at the first expense report line)
-	 *
-	 * @return bool
-	 */
-	public function offsetAlreadyGiven()
-	{
-		$sql = 'SELECT e.rowid FROM '.MAIN_DB_PREFIX.'expensereport e';
-		$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'expensereport_det d ON (e.rowid = d.fk_expensereport)';
-		$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'c_type_fees f ON (d.fk_c_type_fees = f.id AND f.code = \'EX_KME\')';
-		$sql .= ' WHERE e.fk_user_author = '.(int) $this->fk_user_author;
-		$sql .= ' AND YEAR(d.date) = "'.dol_print_date($this->line->date, '%Y').'" AND MONTH(d.date) = "'.dol_print_date($this->line->date, '%m').'"';
-		if (!empty($this->line->id)) $sql .= ' AND d.rowid <> '.$this->line->id;
-
-		dol_syslog(get_class($this)."::offsetAlreadyGiven sql=".$sql);
-		$resql = $this->db->query($sql);
-		if ($resql)
-		{
-			$num = $this->db->num_rows($resql);
-			if ($num > 0) return true;
-		} else {
-			dol_print_error($this->db);
-		}
-
-		return false;
 	}
 
     /**
@@ -2218,12 +2191,18 @@ class ExpenseReport extends CommonObject
 				$this->db->free($resql);
 			}
 
-			$this->applyOffset();
+			$ikRes = $this->applyIkCalculation();
+
+            if (! $ikRes) {
+                $this->db->rollback();
+                return -1;
+            }
+
 			$rulesPassed = $this->checkRules();
 
 			if (! $rulesPassed && empty($this->line->total_ttc)) {
 				$this->db->rollback();
-				return 0;
+				return -1;
 			}
 
 			$result = $this->line->update($user);
