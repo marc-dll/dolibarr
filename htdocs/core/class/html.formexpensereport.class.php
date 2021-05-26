@@ -139,7 +139,7 @@ class FormExpenseReport
     {
 		global $langs;
 
-		$langs->load('trips');
+		$langs->loadLangs(array('trips', 'other')); // 'other' for km unit
 
         $outArray = array();
 
@@ -204,6 +204,8 @@ class FormExpenseReport
                 $label .= $langs->trans('expenseReportRangeMoreThan', $range->range_ik);
             }
 
+            $label .= ' '.$langs->trans('SizeUnitkm');
+
             if ($returnarray) {
                 $outArray[$range->rowid] = array(
                     'label' => $label,
@@ -242,6 +244,8 @@ class FormExpenseReport
     public function getIkRangeLabel($fk_c_exp_tax_range)
     {
         global $langs;
+
+        $langs->load('other'); // For km unit
 
         $sqlStart = "SELECT r.rowid, c.label, r.range_ik, r.fk_c_exp_tax_cat";
         $sqlStart .= " FROM ".MAIN_DB_PREFIX."c_exp_tax_range r";
@@ -290,6 +294,6 @@ class FormExpenseReport
 
         $this->db->free($resqlEnd);
 
-        return $out;
+        return $out.' '.$langs->trans('SizeUnitkm');
     }
 }

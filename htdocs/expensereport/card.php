@@ -2478,7 +2478,7 @@ if ($action == 'create')
 					print '<td class="right">'.$langs->trans('VAT').'</td>';
 					print '<td class="right">'.$langs->trans('PriceUHT').'</td>';
 					print '<td class="right">'.$langs->trans('PriceUTTC').'</td>';
-					print '<td class="right">'.$langs->trans('Qty').'</td>';
+					print '<td class="colnewlineheaderqty right">'.$langs->trans('Qty').'</td>';
 					print '<td></td>';
 					print '<td></td>';
 					print '<td></td>';
@@ -2623,11 +2623,13 @@ if ($action == 'create')
                                     var newFeeType = $expenseTypeSelect.val();
 
                                     if (newFeeType == '.$ikExpenseType.') {
+                                        $("td.colnewlineheaderqty").html("'. dol_escape_js($langs->transnoentities('Distance').' ('.$langs->transnoentities('SizeUnitkm').')', 2).'");
                                         $unitPriceBeforeTaxesInput.attr("disabled", "").val("").trigger("change");
                                         $unitPriceIncludingTaxesInput.attr("disabled", "").val("").trigger("change");
                                         $vatSelect.val("0").attr("disabled", "").trigger("change");
                                         $vehicleCategorySelect.removeAttr("disabled").val('.$vehicleCategory.').trigger("change");
                                     } else {
+                                        $("td.colnewlineheaderqty").html("'. dol_escape_js($langs->transnoentities('Qty'), 2).'");
                                         $unitPriceBeforeTaxesInput.removeAttr("disabled").val("").trigger("change");
                                         $unitPriceIncludingTaxesInput.removeAttr("disabled").val("").trigger("change");
                                         $vatSelect.removeAttr("disabled").trigger("change");

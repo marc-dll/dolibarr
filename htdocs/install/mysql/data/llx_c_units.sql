@@ -24,6 +24,7 @@ INSERT INTO llx_c_units (code, scale, label, short_label, unit_type, active) VAL
 INSERT INTO llx_c_units (code, scale, label, short_label, unit_type, active) VALUES ('OZ','98','WeightUnitounce','Oz', 'weight', 1);
 INSERT INTO llx_c_units (code, scale, label, short_label, unit_type, active) VALUES ('LB','99','WeightUnitpound','lb', 'weight', 1);
 
+INSERT INTO llx_c_units (code, scale, label, short_label, unit_type, active) VALUES ('KM', '3','SizeUnitkm','km', 'size', 1)
 INSERT INTO llx_c_units (code, scale, label, short_label, unit_type, active) VALUES ('M',  '0','SizeUnitm','m', 'size', 1);
 INSERT INTO llx_c_units (code, scale, label, short_label, unit_type, active) VALUES ('DM','-1','SizeUnitdm','dm', 'size', 1);
 INSERT INTO llx_c_units (code, scale, label, short_label, unit_type, active) VALUES ('CM','-2','SizeUnitcm','cm', 'size', 1);
