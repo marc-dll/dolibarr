@@ -2538,9 +2538,18 @@ class ExpenseReport extends CommonObject
 		}
 	}
 
-
-    public function setLineTotalPrice($qty, $price, $vatrate, $fk_c_type_fees)
+    /**
+     * Factorized common code for line amount calculations and set the corresponding fields
+     *
+     * @param   int		$qty                Quantity
+     * @param   float	$price              Unit price including taxes
+     * @param   float	$vatrate            0=do not apply VAT tax, VAT rate=apply (this is VAT rate only without text code, we don't need text code because we alreaydy have all tax info into $localtaxes_array)
+     * @param   int     $fk_c_type_fees     ID of expense type
+     */
+    protected function setLineTotalPrice($qty, $price, $vatrate, $fk_c_type_fees)
     {
+        global $mysoc;
+
         // Clean vat code
         $reg = array();
         $vat_src_code = '';
