@@ -1807,12 +1807,12 @@ class ExpenseReport extends CommonObject
 	 * @param    string      $comments                 Description
 	 * @param    int         $fk_project               Project id
 	 * @param    int         $fk_c_exp_tax_cat         Vehicle category id
-	 * @param    int         $type                     Type line
+	 * @param    int         $unused                   (unused)
 	 * @param    int         $fk_ecm_files             Id of ECM file to link to this expensereport line
 	 * @param    int         $fk_c_exp_tax_range       Id of mileage range
 	 * @return   int                                   <0 if KO, >0 if OK
 	 */
-	public function addline($qty = 0, $up = 0, $fk_c_type_fees = 0, $vatrate = 0, $date = '', $comments = '', $fk_project = 0, $fk_c_exp_tax_cat = 0, $type = 0, $fk_ecm_files = 0, $fk_c_exp_tax_range = 0)
+	public function addline($qty = 0, $up = 0, $fk_c_type_fees = 0, $vatrate = 0, $date = '', $comments = '', $fk_project = 0, $fk_c_exp_tax_cat = 0, $unused = 0, $fk_ecm_files = 0, $fk_c_exp_tax_range = 0)
 	{
 		global $conf, $langs, $mysoc;
 
@@ -1829,39 +1829,15 @@ class ExpenseReport extends CommonObject
 			if (empty($fk_project)) $fk_project = 0;
 
 			$qty = price2num($qty);
-			if (!preg_match('/\s*\((.*)\)/', $vatrate)) {
-				$vatrate = price2num($vatrate); // $txtva can have format '5.0 (XXX)' or '5'
-			}
 			$up = price2num($up);
 
 			$this->db->begin();
 
 			$this->line = new ExpenseReportLine($this->db);
 
-			$localtaxes_type = getLocalTaxesFromRate($vatrate, 0, $mysoc, $this->thirdparty);
-
-			$vat_src_code = '';
-			$reg = array();
-			if (preg_match('/\s*\((.*)\)/', $vatrate, $reg))
-			{
-				$vat_src_code = $reg[1];
-				$vatrate = preg_replace('/\s*\(.*\)/', '', $vatrate); // Remove code into vatrate.
-			}
-			$vatrate = preg_replace('/\*/', '', $vatrate);
-
-			$seller = ''; // seller is unknown
-
-			$tmp = calcul_price_total($qty, $up, 0, $vatrate, 0, 0, 0, 'TTC', 0, $type, $seller, $localtaxes_type);
-
-			$this->line->value_unit = $up;
-			$this->line->vat_src_code = $vat_src_code;
-			$this->line->vatrate = price2num($vatrate);
-			$this->line->total_ttc = $tmp[2];
-			$this->line->total_ht = $tmp[0];
-			$this->line->total_tva = $tmp[1];
+            $this->setLineTotalPrice($qty, $up, $vatrate, $fk_c_type_fees);
 
 			$this->line->fk_expensereport = $this->id;
-			$this->line->qty = $qty;
 			$this->line->date = $date;
 			$this->line->fk_c_type_fees = $fk_c_type_fees;
 			$this->line->fk_c_exp_tax_cat = $fk_c_exp_tax_cat;
@@ -1879,7 +1855,7 @@ class ExpenseReport extends CommonObject
                 return -1;
             }
 
-			$rulesPassed = $this->checkRules($type, $seller);
+			$rulesPassed = $this->checkRules();
 
 			if (! $rulesPassed && empty($this->line->total_ttc)) {
 				$this->db->rollback();
@@ -1914,17 +1890,19 @@ class ExpenseReport extends CommonObject
 	/**
 	 * Check constraint of rules and update price if needed
 	 *
-	 * @param	int		$type		type of line
-	 * @param	string	$seller		seller, but actually he is unknown
+	 * @param	int		$unused1	(unused)
+	 * @param	string	$unused2	(unused)
 	 * @return true or false
 	 */
-	public function checkRules($type = 0, $seller = '')
+	public function checkRules($unused1 = 0, $unused2 = '')
 	{
 		global $conf, $langs;
 
 		$langs->load('trips');
 
-		if (empty($conf->global->MAIN_USE_EXPENSE_RULE)) return true; // if don't use rules
+		if (empty($conf->global->MAIN_USE_EXPENSE_RULE)) {
+            return true; // if don't use rules
+        }
 
 		$rulestocheck = ExpenseReportRule::getAllRule($this->line->fk_c_type_fees, $this->line->date, $this->fk_user_author);
 
@@ -1971,12 +1949,7 @@ class ExpenseReport extends CommonObject
         }
 
 		if ($violation > 0) {
-			$tmp = calcul_price_total($this->line->qty, $new_current_total_ttc / $this->line->qty, 0, $this->line->vatrate, 0, 0, 0, 'TTC', 0, $type, $seller);
-
-			$this->line->value_unit = $tmp[5];
-			$this->line->total_ttc = $tmp[2];
-			$this->line->total_ht = $tmp[0];
-			$this->line->total_tva = $tmp[1];
+            $this->setLineTotalPrice($this->line->qty, $new_current_total_ttc / $this->line->qty, $this->line->vatrate, $this->line->fk_c_type_fees);
 
 			return false;
 		}
@@ -1998,6 +1971,12 @@ class ExpenseReport extends CommonObject
         }
 
         if (empty($this->line->qty)) {
+            return true;
+        }
+
+        $ikCode = getDictvalue(MAIN_DB_PREFIX.'c_type_fees', 'code', $this->line->fk_c_type_fees, false, 'id');
+
+        if ($ikCode != 'EX_KME') {
             return true;
         }
 
@@ -2049,12 +2028,7 @@ class ExpenseReport extends CommonObject
             $unit_price = ($amountAfter - $amountBefore) / $this->line->qty;
         }
 
-        $tmp = calcul_price_total($this->line->qty, $unit_price, 0, $this->line->vatrate, 0, 0, 0, 'TTC', 0, 1);
-
-        $this->line->value_unit = $tmp[5];
-        $this->line->total_ttc = $tmp[2];
-        $this->line->total_ht = $tmp[0];
-        $this->line->total_tva = $tmp[1];
+        $this->setLineTotalPrice($this->line->qty, $unit_price, $this->line->vatrate, $this->line->fk_c_type_fees);
 
         return true;
 	}
@@ -2107,42 +2081,17 @@ class ExpenseReport extends CommonObject
 	 */
 	public function updateline($rowid, $type_fees_id, $projet_id, $vatrate, $comments, $qty, $value_unit, $date, $expensereport_id, $fk_c_exp_tax_cat = 0, $fk_ecm_files = 0, $fk_c_exp_tax_range = 0)
 	{
-		global $user, $mysoc;
+		global $user;
 
 		if ($this->status == self::STATUS_DRAFT || $this->status == self::STATUS_REFUSED)
 		{
 			$this->db->begin();
 
-			$type = 0; // TODO What if type is service ?
-
-			// We don't know seller and buyer for expense reports
-			$seller = $mysoc;
-			$buyer = new Societe($this->db);
-
-			$localtaxes_type = getLocalTaxesFromRate($vatrate, 0, $buyer, $seller);
-
-			// Clean vat code
-			$reg = array();
-			$vat_src_code = '';
-			if (preg_match('/\((.*)\)/', $vatrate, $reg))
-			{
-				$vat_src_code = $reg[1];
-				$vatrate = preg_replace('/\s*\(.*\)/', '', $vatrate); // Remove code into vatrate.
-			}
-			$vatrate = preg_replace('/\*/', '', $vatrate);
-
-			$tmp = calcul_price_total($qty, $value_unit, 0, $vatrate, 0, 0, 0, 'TTC', 0, $type, $seller, $localtaxes_type);
-
-			// calcul total of line
-			//$total_ttc  = price2num($qty*$value_unit, 'MT');
-
-			$tx_tva = $vatrate / 100;
-			$tx_tva = $tx_tva + 1;
-
 			$this->line = new ExpenseReportLine($this->db);
+
+            $this->setLineTotalPrice($qty, $value_unit, $vatrate, $type_fees_id);
+
 			$this->line->comments        = $comments;
-			$this->line->qty             = $qty;
-			$this->line->value_unit      = $value_unit;
 			$this->line->date            = $date;
 
 			$this->line->fk_expensereport = $expensereport_id;
@@ -2151,16 +2100,6 @@ class ExpenseReport extends CommonObject
 			$this->line->fk_c_exp_tax_range = $fk_c_exp_tax_range;
 			$this->line->fk_projet       = $projet_id; // deprecated
 			$this->line->fk_project      = $projet_id;
-
-			$this->line->vat_src_code = $vat_src_code;
-			$this->line->vatrate = price2num($vatrate);
-			$this->line->total_ttc = $tmp[2];
-			$this->line->total_ht = $tmp[0];
-			$this->line->total_tva = $tmp[1];
-			$this->line->localtax1_tx = $localtaxes_type[1];
-			$this->line->localtax2_tx = $localtaxes_type[3];
-			$this->line->localtax1_type = $localtaxes_type[0];
-			$this->line->localtax2_type = $localtaxes_type[2];
 
 			$this->line->fk_ecm_files = $fk_ecm_files;
 
@@ -2598,6 +2537,46 @@ class ExpenseReport extends CommonObject
 			return -1;
 		}
 	}
+
+
+    public function setLineTotalPrice($qty, $price, $vatrate, $fk_c_type_fees)
+    {
+        // Clean vat code
+        $reg = array();
+        $vat_src_code = '';
+        if (preg_match('/\((.*)\)/', $vatrate, $reg))
+        {
+            $vat_src_code = $reg[1];
+            $vatrate = preg_replace('/\s*\(.*\)/', '', $vatrate); // Remove code into vatrate.
+        }
+        $vatrate = preg_replace('/\*/', '', $vatrate);
+
+        // Get product type from dictionary
+        $type = getDictvalue(MAIN_DB_PREFIX.'c_type_fees', 'type', $fk_c_type_fees, false, 'id');
+        if (empty($type)) {
+            $type = 0;
+        }
+
+        // We don't know seller and buyer for expense reports
+        $seller = $mysoc;
+        $buyer = new Societe($this->db);
+
+        $localtaxes_type = getLocalTaxesFromRate($vatrate, 0, $buyer, $seller);
+
+        $tmp = calcul_price_total($qty, $price, 0, $vatrate, 0, 0, 0, 'TTC', 0, $type, $seller, $localtaxes_type);
+
+        $this->line->qty             = $qty;
+        $this->line->value_unit      = $price;
+        $this->line->vat_src_code    = $vat_src_code;
+        $this->line->vatrate         = price2num($vatrate);
+        $this->line->total_ttc       = $tmp[2];
+        $this->line->total_ht        = $tmp[0];
+        $this->line->total_tva       = $tmp[1];
+        $this->line->localtax1_tx    = $localtaxes_type[1];
+        $this->line->localtax2_tx    = $localtaxes_type[3];
+        $this->line->localtax1_type  = $localtaxes_type[0];
+        $this->line->localtax2_type  = $localtaxes_type[2];
+    }
 }
 
 

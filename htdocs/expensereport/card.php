@@ -1174,10 +1174,8 @@ if (empty($reshook))
 
 		if (!$error)
 		{
-			$type = 0; // TODO What if service ? We should take the type product/service from the type of expense report llx_c_type_fees
-
 			// Insert line
-			$result = $object->addline($qty, $value_unit, $fk_c_type_fees, $vatrate, $date, $comments, $fk_project, $fk_c_exp_tax_cat, $type, $fk_ecm_files, $fk_c_exp_tax_range);
+			$result = $object->addline($qty, $value_unit, $fk_c_type_fees, $vatrate, $date, $comments, $fk_project, $fk_c_exp_tax_cat, 0, $fk_ecm_files, $fk_c_exp_tax_range);
 
 			if ($result >= 0) {
                 // Warning for non-blocking rules don't return negative values

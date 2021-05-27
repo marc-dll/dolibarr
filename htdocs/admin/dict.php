@@ -201,7 +201,7 @@ $tabsql[13] = "SELECT c.id    as rowid, c.code, c.libelle, c.type, c.active, c.e
 $tabsql[14] = "SELECT e.rowid as rowid, e.code as code, e.label, e.price, e.organization, e.fk_pays as country_id, c.code as country_code, c.label as country, e.active FROM ".MAIN_DB_PREFIX."c_ecotaxe AS e, ".MAIN_DB_PREFIX."c_country as c WHERE e.fk_pays=c.rowid and c.active=1";
 $tabsql[15] = "SELECT rowid   as rowid, code, label as libelle, width, height, unit, active FROM ".MAIN_DB_PREFIX."c_paper_format";
 $tabsql[16] = "SELECT code, label as libelle, sortorder, active FROM ".MAIN_DB_PREFIX."c_prospectlevel";
-$tabsql[17] = "SELECT id      as rowid, code, label, accountancy_code, active FROM ".MAIN_DB_PREFIX."c_type_fees";
+$tabsql[17] = "SELECT id      as rowid, code, label, accountancy_code, type, active FROM ".MAIN_DB_PREFIX."c_type_fees";
 $tabsql[18] = "SELECT rowid   as rowid, code, libelle, tracking, active FROM ".MAIN_DB_PREFIX."c_shipment_mode";
 $tabsql[19] = "SELECT id      as rowid, code, libelle, active FROM ".MAIN_DB_PREFIX."c_effectif";
 $tabsql[20] = "SELECT rowid   as rowid, code, libelle, active FROM ".MAIN_DB_PREFIX."c_input_method";
@@ -291,7 +291,7 @@ $tabfield[13] = "code,libelle,type,entity";
 $tabfield[14] = "code,label,price,organization,country";
 $tabfield[15] = "code,libelle,width,height,unit";
 $tabfield[16] = "code,libelle,sortorder";
-$tabfield[17] = "code,label,accountancy_code";
+$tabfield[17] = "code,label,accountancy_code,type";
 $tabfield[18] = "code,libelle,tracking";
 $tabfield[19] = "code,libelle";
 $tabfield[20] = "code,libelle";
@@ -336,7 +336,7 @@ $tabfieldvalue[13] = "code,libelle,type";
 $tabfieldvalue[14] = "code,label,price,organization,country";
 $tabfieldvalue[15] = "code,libelle,width,height,unit";
 $tabfieldvalue[16] = "code,libelle,sortorder";
-$tabfieldvalue[17] = "code,label,accountancy_code";
+$tabfieldvalue[17] = "code,label,accountancy_code,type";
 $tabfieldvalue[18] = "code,libelle,tracking";
 $tabfieldvalue[19] = "code,libelle";
 $tabfieldvalue[20] = "code,libelle";
@@ -381,7 +381,7 @@ $tabfieldinsert[13] = "code,libelle,type,entity";
 $tabfieldinsert[14] = "code,label,price,organization,fk_pays";
 $tabfieldinsert[15] = "code,label,width,height,unit";
 $tabfieldinsert[16] = "code,label,sortorder";
-$tabfieldinsert[17] = "code,label,accountancy_code";
+$tabfieldinsert[17] = "code,label,accountancy_code,type";
 $tabfieldinsert[18] = "code,libelle,tracking";
 $tabfieldinsert[19] = "code,libelle";
 $tabfieldinsert[20] = "code,libelle";
@@ -1650,6 +1650,14 @@ if ($id)
 							} elseif ($fieldlist[$field] == 'label' && $tabname[$id] == MAIN_DB_PREFIX.'c_product_nature') {
 								$langs->load("products");
 								$valuetoshow = $langs->trans($obj->{$fieldlist[$field]});
+							} elseif ($fieldlist[$field] == 'type' && $tabname[$id] == MAIN_DB_PREFIX.'c_type_fees') {
+                                $pictotouse = 'product';
+                                $keytouse = 'Product';
+                                if ($obj->{$fieldlist[$field]} == 1) {
+                                    $pictotouse = 'service';
+                                    $keytouse='Service';
+                                }
+                                $valuetoshow = img_picto($langs->transnoentities($keytouse), $pictotouse).' '.$langs->trans($keytouse);
 							}
 							$class .= ($class ? ' ' : '').'tddict';
 							if ($fieldlist[$field] == 'note' && $id == 10) $class .= ' tdoverflowmax200';
@@ -1994,6 +2002,11 @@ function fieldList($fieldlist, $obj = '', $tabname = '', $context = '')
 		{
 			print '<td>';
 			print $form->selectExpenseRanges($obj->fk_range);
+			print '</td>';
+		} elseif ($fieldlist[$field] == 'type' && $tabname == MAIN_DB_PREFIX."c_type_fees")
+		{
+			print '<td>';
+            print $form->select_type_of_lines($obj->type, 'type', 0, 1);
 			print '</td>';
 		} else {
 			$fieldValue = isset($obj->{$fieldlist[$field]}) ? $obj->{$fieldlist[$field]}:'';
