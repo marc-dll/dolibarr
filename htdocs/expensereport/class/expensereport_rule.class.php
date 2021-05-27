@@ -105,23 +105,25 @@ class ExpenseReportRule extends CommonObject
 	public $ismultientitymanaged = 1;
 
 
-	/**
-	 * Attribute object linked with database
-	 * @var array
-	 */
-	public $fields = array(
-		'rowid'=>array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>1, 'visible'=>-2, 'noteditable'=>1, 'notnull'=> 1, 'index'=>1, 'position'=>1, 'comment'=>'Id', 'css'=>'left'),
-		'entity'=>array('type'=>'integer', 'label'=>'Entity', 'enabled'=>1, 'visible'=>0, 'notnull'=> 1, 'default'=>1, 'index'=>1, 'position'=>10),
-		'dates'=>array('type'=>'date', 'label'=>'ExpenseReportDateStart', 'enabled'=>1, 'visible'=>1, 'notnull'=>1, 'position'=>20),
-		'datee'=>array('type'=>'date', 'label'=>'ExpenseReportDateEnd', 'enabled'=>1, 'visible'=>1, 'notnull'=>1, 'position'=>25),
-		'amount'=>array('type'=>'double(24,8)', 'label'=>'ExpenseReportLimitAmount', 'enabled'=>1, 'visible'=>1, 'notnull'=>1, 'position'=>30),
-		'restrictive'=>array('type'=>'integer', 'label'=>'ExpenseReportRestrictive', 'enabled'=>1, 'visible'=>1, 'notnull'=>1, 'position'=>40),
-		'is_for_all'=>array('type'=>'integer', 'label'=>'Everybody', 'enabled'=>1, 'visible'=>1, 'notnull'=>1, 'position'=>50),
-		'fk_user'=>array('type'=>'integer:User:user/class/user.class.php', 'label'=>'User', 'enabled'=>1, 'visible'=>1, 'position'=>50),
-		'fk_usergroup'=>array('type'=>'integer:Usergroup:user/class/usergroup.class.php', 'label'=>'Usergroup', 'enabled'=>1, 'visible'=>1, 'position'=>50),
-		'fk_c_type_fees'=>array('type'=>'integer', 'label'=>'Type', 'enabled'=>1, 'visible'=>1, 'position'=>60),
-		'code_expense_rules_type'=>array('type'=>'string', 'label'=>'Code', 'enabled'=>1, 'visible'=>1, 'position'=>70),
-	);
+    /**
+     * Attribute object linked with database
+     * @var array
+     */
+    public $fields = array(
+        'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>1, 'visible'=>1, 'noteditable'=>1, 'notnull'=>1, 'index'=>1, 'position'=>1, 'comment'=>'Id', 'css'=>'left'),
+        'entity' => array('type'=>'integer', 'label'=>'Entity', 'enabled'=>1, 'visible'=>0, 'default'=>1, 'position'=>10),
+        'dates' => array('type'=>'datetime', 'label'=>'ExpenseReportDateStart', 'enabled'=>1, 'visible'=>1, 'notnull'=>1, 'position'=>20),
+        'datee' => array('type'=>'datetime', 'label'=>'ExpenseReportDateEnd', 'enabled'=>1, 'visible'=>1, 'notnull'=>1, 'position'=>30),
+        'amount' => array('type'=>'double(24,8)', 'label'=>'ExpenseReportLimitAmount', 'enabled'=>1, 'visible'=>1, 'notnull'=>1, 'position'=>40),
+        'restrictive' => array('type'=>'boolean', 'label'=>'ExpenseReportRestrictive', 'enabled'=>1, 'visible'=>1, 'notnull'=>1, 'position'=>50),
+        'is_for_all' => array('type'=>'boolean', 'label'=>'Everybody', 'enabled'=>1, 'visible'=>1, 'default'=>0, 'notnull'=>1, 'position'=>60),
+        'fk_user' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'User', 'enabled'=>1, 'visible'=>1, 'default'=>null, 'position'=>70),
+        'fk_usergroup' => array('type'=>'integer:UserGroup:user/class/usergroup.class.php', 'label'=>'Usergroup', 'enabled'=>1, 'visible'=>1, 'default'=>null, 'position'=>80),
+        'fk_c_type_fees' => array('type'=>'sellist:c_type_fees:label:id::active=1', 'label'=>'Type', 'enabled'=>1, 'visible'=>1, 'notnull'=>1, 'position'=>90),
+        'code_expense_rules_type' => array('type'=>'string', 'label'=>'ExpenseReportLimitOn', 'enabled'=>1, 'visible'=>1, 'arrayofkeyval'=>array('EX_DAY'=>'Day', 'EX_MON'=>'Month', 'EX_YEA'=>'Year', 'EX_EXP'=>'OnExpense'), 'position'=>100),
+        'datec' => array('type'=>'datetime', 'label'=>'DateCreation', 'enabled'=>1, 'visible'=>-2, 'default'=>null, 'position'=>500),
+        'tms' => array('type'=>'timestamp', 'label'=>'DateModification', 'enabled'=>1, 'visible'=>-2, 'notnull'=> 0, 'position'=>501)
+    );
 
 	/**
 	 *  Constructor
