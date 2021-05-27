@@ -2561,10 +2561,33 @@ if ($action == 'create')
 				print '</table>';
 				print '</div>';
 
-				print '<script javascript>
+                $handleIk = ! empty($conf->global->MAIN_USE_EXPENSE_IK) && $ikExpenseType > 0;
+
+                if ($handleIk) {
+                    $vehicleCategory = ! empty($fk_c_exp_tax_cat) ? $fk_c_exp_tax_cat : $userauthor->default_c_exp_tax_cat;
+
+                    if ($vehicleCategory <= 0) {
+                        $vehicleCategory = 0;
+                    }
+
+                    $range = ! empty($fk_c_exp_tax_range) ? $fk_c_exp_tax_range : $userauthor->default_range;
+
+                    if ($range <= 0) {
+                        $range = -1;
+                    }
+                }
+
+				print '<script type="text/javascript">
 
 				/* JQuery for product free or predefined select */
 				jQuery(document).ready(function() {
+                    var $expenseTypeSelect = jQuery("select[name=fk_c_type_fees]");
+                    var $vehicleCategorySelect = jQuery("select[name=fk_c_exp_tax_cat]");
+                    var $rangeSelect = jQuery("select[name=fk_c_exp_tax_range]");
+                    var $vatSelect = jQuery("select[name=vatrate]");
+                    var $unitPriceBeforeTaxesInput = jQuery("input[name=value_unit_ht]");
+                    var $unitPriceIncludingTaxesInput = jQuery("input[name=value_unit]");
+
 				    jQuery("#value_unit_ht").keyup(function(event) {
 				         console.log(event.which);		// discard event tag and arrows
 				        if (event.which != 9 && (event.which < 37 ||event.which > 40) && jQuery("#value_unit_ht").val() != "") {
@@ -2577,136 +2600,133 @@ if ($action == 'create')
 				            jQuery("#value_unit_ht").val("");
 				        }
 				    });
+
+                    $expenseTypeSelect.on("change", function() {
+                        var newFeeType = $expenseTypeSelect.val();
+                        var $selectOption = $expenseTypeSelect.find("option:selected");
+                        var defaultVat = $selectOption.attr("data-fk-tva");
+                        var forceVat = $selectOption.attr("data-force-vat");
+
+                        if (forceVat == "0") {
+                            $vatSelect.removeAttr("disabled");
+                        } else {
+                            $vatSelect.attr("disabled", "");
+                        }
+
+                        if (defaultVat) {
+                            $vatSelect.val(defaultVat).trigger("change");
+                        } else {
+                            $vatSelect.val($vatSelect.find("option[selected]").attr("value")).trigger("change");
+                        }';
+
+                if ($handleIk) {
+                    print '
+                        if (newFeeType == '.$ikExpenseType.') {
+                            $("td.colnewlineheaderqty").html("'. dol_escape_js($langs->transnoentities('Distance').' ('.$langs->transnoentities('SizeUnitkm').')', 2).'");
+                            $unitPriceBeforeTaxesInput.attr("disabled", "").val("").trigger("change");
+                            $unitPriceIncludingTaxesInput.attr("disabled", "").val("").trigger("change");
+                            $vehicleCategorySelect.removeAttr("disabled").val('.$vehicleCategory.').trigger("change");
+                        } else {';
+                }
+
+                print '
+                            $("td.colnewlineheaderqty").html("'. dol_escape_js($langs->transnoentities('Qty'), 2).'");
+                            $unitPriceBeforeTaxesInput.removeAttr("disabled").val("").trigger("change");
+                            $unitPriceIncludingTaxesInput.removeAttr("disabled").val("").trigger("change");
+                            $vehicleCategorySelect.val("0").attr("disabled", "").trigger("change");
+                        }
+                    });';
+
+                if ($handleIk) {
+                    print '
+
+                    function clearRangeSelect($rangeSelect)
+                    {
+                        $rangeSelect.children("option").each(function (index, element) {
+                            var $option = jQuery(element);
+
+                            if ($option.attr("value") != "-1") {
+                                $option.remove();
+                            }
+                        });
+
+                        $rangeSelect.attr("disabled", "").trigger("change");
+                    }
+
+                    $vehicleCategorySelect.on("change", function() {
+                        var newCategory = $vehicleCategorySelect.val();
+
+                        if (! newCategory || newCategory.length == 0 || newCategory == "0") {
+                            clearRangeSelect($rangeSelect);
+
+                            return true;
+                        }
+
+                        jQuery.ajax({
+                            method: "POST",
+                            dataType: "json",
+                            data: { fk_c_exp_tax_cat: newCategory },
+                            url: "'.dol_buildpath('/expensereport/ajax/ajaxik.php', 1).'",
+                        }).done(function (data) {
+                            clearRangeSelect($rangeSelect)
+
+                            if (data.error) {
+                                jQuery.jnotify(data.error, "error");
+                            } else {
+                                for (let id in data) {
+                                    $newOption = jQuery("<option>").val(id).html(data[id].label);
+
+                                    for (let key in data[id].data) {
+                                        $newOption.attr("data-"+key, data[id].data[key]);
+                                    }
+
+                                    $rangeSelect.append($newOption);
+                                }
+                            }
+
+                            $rangeSelect.val("'.$range.'").removeAttr("disabled").trigger("change");
+                        });
+
+                        return true;
+                    });
+
+                    $rangeSelect.on("change", function() {
+                        var range = $rangeSelect.val();
+
+                        if (range == "-1") {
+                            $unitPriceIncludingTaxesInput.val("").trigger("change");
+                            return true;
+                        }
+
+                        var $selectedOption = $rangeSelect.children("option:selected");
+
+                        if ($selectedOption.is("[data-coef]")) {
+                            var coef = $selectedOption.attr("data-coef");
+
+                            $unitPriceIncludingTaxesInput.val(coef).trigger("change");
+                        } else {
+                            $unitPriceIncludingTaxesInput.val("").trigger("change");
+                        }
+                    });
+
+                    $expenseTypeSelect.trigger("change");';
+                }
+
+                print '
+
+                    // disabled attribute does not send data, remove it before submit
+                    jQuery("form").on("submit", function() {
+                        $vehicleCategorySelect.removeAttr("disabled");
+                        $rangeSelect.removeAttr("disabled");
+                        $vatSelect.removeAttr("disabled");
+                        $unitPriceBeforeTaxesInput.removeAttr("disabled");
+                        $unitPriceIncludingTaxesInput.removeAttr("disabled");
+
+                        return true;
+                    });
 				});
 
                 </script>';
-
-                if (! empty($conf->global->MAIN_USE_EXPENSE_IK) && $ikExpenseType > 0) {
-                    $vehicleCategory = ! empty($fk_c_exp_tax_cat) ? $fk_c_exp_tax_cat : $userauthor->default_c_exp_tax_cat;
-
-                    if ($vehicleCategory <= 0) {
-                        $vehicleCategory = 0;
-                    }
-
-                    $range = ! empty($fk_c_exp_tax_range) ? $fk_c_exp_tax_range : $userauthor->default_range;
-
-                    if ($range <= 0) {
-                        $range = -1;
-                    }
-
-                    print '
-                        <script type="text/javascript">
-                            function clearRangeSelect($rangeSelect)
-                            {
-                                $rangeSelect.children("option").each(function (index, element) {
-                                    var $option = jQuery(element);
-
-                                    if ($option.attr("value") != "-1") {
-                                        $option.remove();
-                                    }
-                                });
-
-                                $rangeSelect.attr("disabled", "").trigger("change");
-                            }
-
-                            jQuery(document).ready(function() {
-                                var $expenseTypeSelect = jQuery("select[name=fk_c_type_fees]");
-                                var $vehicleCategorySelect = jQuery("select[name=fk_c_exp_tax_cat]");
-                                var $rangeSelect = jQuery("select[name=fk_c_exp_tax_range]");
-                                var $vatSelect = jQuery("select[name=vatrate]");
-                                var $unitPriceBeforeTaxesInput = jQuery("input[name=value_unit_ht]");
-                                var $unitPriceIncludingTaxesInput = jQuery("input[name=value_unit]");
-
-                                $expenseTypeSelect.on("change", function() {
-                                    var newFeeType = $expenseTypeSelect.val();
-
-                                    if (newFeeType == '.$ikExpenseType.') {
-                                        $("td.colnewlineheaderqty").html("'. dol_escape_js($langs->transnoentities('Distance').' ('.$langs->transnoentities('SizeUnitkm').')', 2).'");
-                                        $unitPriceBeforeTaxesInput.attr("disabled", "").val("").trigger("change");
-                                        $unitPriceIncludingTaxesInput.attr("disabled", "").val("").trigger("change");
-                                        $vatSelect.val("0").attr("disabled", "").trigger("change");
-                                        $vehicleCategorySelect.removeAttr("disabled").val('.$vehicleCategory.').trigger("change");
-                                    } else {
-                                        $("td.colnewlineheaderqty").html("'. dol_escape_js($langs->transnoentities('Qty'), 2).'");
-                                        $unitPriceBeforeTaxesInput.removeAttr("disabled").val("").trigger("change");
-                                        $unitPriceIncludingTaxesInput.removeAttr("disabled").val("").trigger("change");
-                                        $vatSelect.removeAttr("disabled").trigger("change");
-                                        $vehicleCategorySelect.val("0").attr("disabled", "").trigger("change");
-                                    }
-                                });
-
-                                $vehicleCategorySelect.on("change", function() {
-                                    var newCategory = $vehicleCategorySelect.val();
-
-                                    if (! newCategory || newCategory.length == 0 || newCategory == "0") {
-                                        clearRangeSelect($rangeSelect);
-
-                                        return true;
-                                    }
-
-                                    jQuery.ajax({
-                                        method: "POST",
-                                        dataType: "json",
-                                        data: { fk_c_exp_tax_cat: newCategory },
-                                        url: "'.dol_buildpath('/expensereport/ajax/ajaxik.php', 1).'",
-                                    }).done(function (data) {
-                                        clearRangeSelect($rangeSelect)
-
-                                        if (data.error) {
-                                            jQuery.jnotify(data.error, "error");
-                                        } else {
-                                            for (let id in data) {
-                                                $newOption = jQuery("<option>").val(id).html(data[id].label);
-
-                                                for (let key in data[id].data) {
-                                                    $newOption.attr("data-"+key, data[id].data[key]);
-                                                }
-
-                                                $rangeSelect.append($newOption);
-                                            }
-                                        }
-
-                                        $rangeSelect.val("'.$range.'").removeAttr("disabled").trigger("change");
-                                    });
-
-                                    return true;
-                                });
-
-                                $rangeSelect.on("change", function() {
-                                    var range = $rangeSelect.val();
-
-                                    if (range == "-1") {
-                                        $unitPriceIncludingTaxesInput.val("").trigger("change");
-                                        return true;
-                                    }
-
-                                    var $selectedOption = $rangeSelect.children("option:selected");
-
-                                    if ($selectedOption.is("[data-coef]")) {
-                                        var coef = $selectedOption.attr("data-coef");
-
-                                        $unitPriceIncludingTaxesInput.val(coef).trigger("change");
-                                    } else {
-                                        $unitPriceIncludingTaxesInput.val("").trigger("change");
-                                    }
-                                });
-
-                                $expenseTypeSelect.trigger("change");
-
-                                // disabled attribute does not send data, remove it before submit
-                                jQuery("form").on("submit", function() {
-                                    $vehicleCategorySelect.removeAttr("disabled");
-                                    $rangeSelect.removeAttr("disabled");
-                                    $vatSelect.removeAttr("disabled");
-                                    $unitPriceBeforeTaxesInput.removeAttr("disabled");
-                                    $unitPriceIncludingTaxesInput.removeAttr("disabled");
-
-                                    return true;
-                                });
-                            });
-                        </script>
-                    ';
-                }
 
 				print '</form>';
 

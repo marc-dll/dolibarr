@@ -96,7 +96,20 @@ class FormExpenseReport
 	public function selectTypeExpenseReport($selected = '', $htmlname = 'type', $showempty = 0, $active = 1)
 	{
 		// phpcs:enable
-		global $langs, $user;
+		global $langs, $user, $form, $mysoc;
+
+        if (empty($form)) {
+            require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
+            $form = new Form($this->db);
+        }
+
+        $vatCache = array();
+
+        if ($form->load_cache_vatrates("'".$mysoc->country_code."'") > 0) {
+            // Re-index cache array with 'rowid's
+            $vatCache = array_column($form->cache_vatrates, null, 'rowid');
+        }
+
 		$langs->load("trips");
 
 		$out = '';
@@ -104,12 +117,12 @@ class FormExpenseReport
 		$out .= '<select class="flat" name="'.$htmlname.'" id="'.$htmlname.'">';
 		if ($showempty)
 		{
-			$out .= '<option value="-1"';
+			$out .= '<option value="-1" data-fk-tva="" data-force-vat="0"';
 			if ($selected == -1) $out .= ' selected';
 			$out .= '>&nbsp;</option>';
 		}
 
-		$sql = "SELECT c.id, c.code, c.label as type FROM ".MAIN_DB_PREFIX."c_type_fees as c";
+		$sql = "SELECT c.id, c.code, c.label as type, c.fk_tva, c.force_vat FROM ".MAIN_DB_PREFIX."c_type_fees as c";
 		if ($active >= 0) $sql .= " WHERE c.active = ".$active;
 		$sql .= " ORDER BY c.label ASC";
 		$resql = $this->db->query($sql);
@@ -121,7 +134,20 @@ class FormExpenseReport
 			while ($i < $num)
 			{
 				$obj = $this->db->fetch_object($resql);
-				$out .= '<option value="'.$obj->id.'"';
+
+                $vatrate = '';
+                if ($obj->fk_tva > 0 && isset($vatCache[$obj->fk_tva])) {
+                    $vatArray = $vatCache[$obj->fk_tva];
+
+                    $vatrate = $vatArray['txtva'];
+                    $vatrate .= $vatArray['nprtva'] ? '*' : '';
+
+                    if ($vatArray['code']) {
+                        $vatrate .= ' ('.$vatArray['code'].')';
+                    }
+                }
+
+				$out .= '<option value="'.$obj->id.'" data-fk-tva="'.$vatrate.'" data-force-vat="'.$obj->force_vat.'"';
 				if ($obj->code == $selected || $obj->id == $selected) $out .= ' selected';
 				$out .= '>';
 				if ($obj->code != $langs->trans($obj->code)) $out .= $langs->trans($obj->code);
