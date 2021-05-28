@@ -83,7 +83,7 @@ class ExpenseReportIk extends CommonObject
         'fk_range' => array('type'=>'sellist:c_exp_tax_range:label:rowid:fk_c_exp_tax_cat:active=1', 'label'=>'RangeIk', 'enabled'=>1, 'visible'=>1, 'default'=>0, 'notnull'=>1, 'position'=>20),
         'coef' => array('type'=>'double', 'label'=>'expenseReportCoef', 'enabled'=>1, 'visible'=>1, 'default'=>0, 'notnull'=>1, 'position'=>30),
         'ikoffset' => array('type'=>'double', 'label'=>'expenseReportOffset', 'enabled'=>1, 'visible'=>1, 'default'=>0, 'notnull'=>1, 'position'=>40),
-        'active' => array('type'=>'integer', 'label'=>'Active', 'enabled'=>1, 'visible'=>1, 'default'=>1, 'position'=>50),
+        'active' => array('type'=>'integer', 'label'=>'Active', 'enabled'=>1, 'visible'=>1, 'default'=>1, 'notnull'=>1, 'position'=>50),
         'datec' => array('type'=>'datetime', 'label'=>'DateCreation', 'enabled'=>1, 'visible'=>-2, 'default'=>null, 'position'=>500),
         'tms' => array('type'=>'timestamp', 'label'=>'DateModification', 'enabled'=>1, 'visible'=>-2, 'notnull'=> 0, 'position'=>501)
     );
