@@ -25,7 +25,7 @@ create table llx_c_type_fees
   code      		varchar(12)  NOT NULL,
   label				varchar(30),
   type				integer DEFAULT 0,		-- 0=type product, 1=type service
-  fk_default_c_tva  integer DEFAULT NULL,
+  fk_tva  integer DEFAULT NULL,
   force_vat         tinyint DEFAULT 0   NOT NULL,
   accountancy_code	varchar(32) NULL,
   active    		tinyint DEFAULT 1   NOT NULL,
