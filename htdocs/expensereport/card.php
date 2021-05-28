@@ -1159,6 +1159,12 @@ if (empty($reshook))
 			$error++;
 			setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("PriceUTTC")), null, 'errors');
 		}
+
+        if ($ikLine && ! empty($conf->global->MAIN_EXPENSEREPORT_IK_REQUIRE_DESCRIPTION) && empty($comments)) {
+			$error++;
+			setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("Description")), null, 'errors');
+        }
+
 		// Warning if date out of range
 		if ($date < $object->date_debut || $date > ($object->date_fin + (24 * 3600 - 1)))
 		{
@@ -1306,10 +1312,24 @@ if (empty($reshook))
 			$action = '';
 		}
 
-        if (! empty($conf->global->MAIN_USE_EXPENSE_IK) && $fk_c_type_fees == $ikExpenseType && ($fk_c_exp_tax_cat <= 0 || $fk_c_exp_tax_range <= 0)) {
+        $ikLine = ! empty($conf->global->MAIN_USE_EXPENSE_IK) && $fk_c_type_fees == $ikExpenseType;
+
+        if ($ikLine && $fk_c_exp_tax_cat <= 0) {
             $error++;
             setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv('VehicleCategory')), null, 'errors');
         }
+
+		// If no amount set, it can be calculated from category and range
+		if ($value_unit == 0 && (!$ikLine || ($fk_c_exp_tax_cat > 0 && $fk_c_exp_tax_range > 0))) {
+			$error++;
+			setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("PriceUTTC")), null, 'errors');
+		}
+
+        if ($ikLine && ! empty($conf->global->MAIN_EXPENSEREPORT_IK_REQUIRE_DESCRIPTION) && empty($comments)) {
+			$error++;
+			setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("Description")), null, 'errors');
+        }
+
 		// Warning if date out of range
 		if ($date < $object->date_debut || $date > ($object->date_fin + (24 * 3600 - 1)))
 		{
