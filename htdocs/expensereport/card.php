@@ -1284,6 +1284,7 @@ if (empty($reshook))
 		$projet_id = $fk_project;
 		$comments = GETPOST('comments', 'restricthtml');
 		$qty = GETPOST('qty', 'int');
+		if (empty($qty)) $qty = 1;
 		$vatrate = GETPOST('vatrate', 'alpha');
 
 		// if VAT is not used in Dolibarr, set VAT rate to 0 because VAT rate is necessary.
