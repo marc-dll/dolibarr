@@ -199,7 +199,8 @@ class ExpenseReportIk extends CommonObject
 
 		$ranges = array();
 
-		$sql = 'SELECT r.rowid FROM '.MAIN_DB_PREFIX.'c_exp_tax_range r';
+		$sql = 'SELECT eik.rowid FROM '.MAIN_DB_PREFIX.'expensereport_ik eik';
+		$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'c_exp_tax_range r ON r.rowid = eik.fk_range';
 		if ($active) $sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'c_exp_tax_cat c ON (r.fk_c_exp_tax_cat = c.rowid)';
 		$sql .= ' WHERE r.fk_c_exp_tax_cat = '.$fk_c_exp_tax_cat;
 		if ($active) $sql .= ' AND r.active = 1 AND c.active = 1';
