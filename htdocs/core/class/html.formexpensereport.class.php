@@ -114,7 +114,7 @@ class FormExpenseReport
 
 		$out = '';
 
-		$out .= '<select class="flat" name="'.$htmlname.'" id="'.$htmlname.'">';
+		$out .= '<select class="flat maxwidth300" name="'.$htmlname.'" id="'.$htmlname.'">';
 		if ($showempty)
 		{
 			$out .= '<option value="-1" data-fk-tva="" data-force-vat="0"';
