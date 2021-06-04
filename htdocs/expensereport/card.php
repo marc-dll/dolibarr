@@ -2627,7 +2627,7 @@ if ($action == 'create')
 
                 print '
                             $("td.colnewlineheaderqty").html("'. dol_escape_js($langs->transnoentities('Qty'), 2).'");
-                            $unitPriceBeforeTaxesInput.removeAttr("disabled").val("").trigger("change");
+                            $unitPriceBeforeTaxesInput'.($taxlessUnitPriceDisabled ? '' : '.removeAttr("disabled")').'.val("").trigger("change");
                             $unitPriceIncludingTaxesInput.removeAttr("disabled").val("").trigger("change");
                             $vehicleCategorySelect.val("0").attr("disabled", "").trigger("change");';
 
