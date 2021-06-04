@@ -1121,7 +1121,6 @@ if (empty($reshook))
 		}
 
 		$fk_c_exp_tax_cat = GETPOST('fk_c_exp_tax_cat', 'int');
-		$fk_c_exp_tax_range = GETPOST('fk_c_exp_tax_range', 'int');
 
 		$qty = GETPOST('qty', 'int');
 		if (empty($qty)) $qty = 1;
@@ -1155,7 +1154,7 @@ if (empty($reshook))
         }
 
 		// If no amount set, it can be calculated from category and range
-		if ($value_unit == 0 && (!$ikLine || ($fk_c_exp_tax_cat > 0 && $fk_c_exp_tax_range > 0))) {
+		if ($value_unit == 0 && !$ikLine) {
 			$error++;
 			setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("PriceUTTC")), null, 'errors');
 		}
@@ -1181,7 +1180,7 @@ if (empty($reshook))
 		if (!$error)
 		{
 			// Insert line
-			$result = $object->addline($qty, $value_unit, $fk_c_type_fees, $vatrate, $date, $comments, $fk_project, $fk_c_exp_tax_cat, 0, $fk_ecm_files, $fk_c_exp_tax_range);
+			$result = $object->addline($qty, $value_unit, $fk_c_type_fees, $vatrate, $date, $comments, $fk_project, $fk_c_exp_tax_cat, 0, $fk_ecm_files);
 
 			if ($result >= 0) {
                 // Warning for non-blocking rules don't return negative values
@@ -1282,7 +1281,6 @@ if (empty($reshook))
 		$rowid = $_POST['rowid'];
 		$type_fees_id = GETPOST('fk_c_type_fees', 'int');
 		$fk_c_exp_tax_cat = GETPOST('fk_c_exp_tax_cat', 'int');
-		$fk_c_exp_tax_range = GETPOST('fk_c_exp_tax_range', 'int');
 		$projet_id = $fk_project;
 		$comments = GETPOST('comments', 'restricthtml');
 		$qty = GETPOST('qty', 'int');
@@ -1320,7 +1318,7 @@ if (empty($reshook))
         }
 
 		// If no amount set, it can be calculated from category and range
-		if ($value_unit == 0 && (!$ikLine || ($fk_c_exp_tax_cat > 0 && $fk_c_exp_tax_range > 0))) {
+		if ($value_unit == 0 && !$ikLine) {
 			$error++;
 			setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("PriceUTTC")), null, 'errors');
 		}
@@ -1346,7 +1344,7 @@ if (empty($reshook))
 		if (!$error)
 		{
 			// TODO Use update method of ExpenseReportLine
-			$result = $object->updateline($rowid, $type_fees_id, $projet_id, $vatrate, $comments, $qty, $value_unit, $date, $id, $fk_c_exp_tax_cat, $fk_ecm_files, $fk_c_exp_tax_range);
+			$result = $object->updateline($rowid, $type_fees_id, $projet_id, $vatrate, $comments, $qty, $value_unit, $date, $id, $fk_c_exp_tax_cat, $fk_ecm_files);
 			if ($result >= 0)
 			{
                 // Warning for non-blocking rules don't return negative values
@@ -2089,7 +2087,6 @@ if ($action == 'create')
 					print '<td class="center">'.$langs->trans('Type').'</td>';
 					if (!empty($conf->global->MAIN_USE_EXPENSE_IK)) {
                         print '<td>'.$langs->trans('VehicleCategory').'</td>';
-                        print '<td>'.$langs->trans('RangeIk').'</td>';
                     }
 					print '<td>'.$langs->trans('Description').'</td>';
 					print '<td class="right">'.$langs->trans('VAT').'</td>';
@@ -2152,11 +2149,6 @@ if ($action == 'create')
 								print '<td class="fk_c_exp_tax_cat">';
                                 if ($line->fk_c_exp_tax_cat > 0) {
                                     print $langs->trans(dol_getIdFromCode($db, $line->fk_c_exp_tax_cat, 'c_exp_tax_cat', 'rowid', 'label'));
-                                }
-								print '</td>';
-                                print '<td class="fk_c_exp_tax_cat">';
-                                if ($line->fk_c_exp_tax_range > 0) {
-                                    print $formexpensereport->getIkRangeLabel($line->fk_c_exp_tax_range);
                                 }
 								print '</td>';
 							}
@@ -2363,12 +2355,8 @@ if ($action == 'create')
 
 							if (!empty($conf->global->MAIN_USE_EXPENSE_IK)) {
                                 $selectedCat = empty($line->fk_c_exp_tax_cat) ? 0 : $line->fk_c_exp_tax_cat;
-                                $selectedRange = empty($line->fk_c_exp_tax_range) ? -1 : $line->fk_c_exp_tax_range;
 								print '<td class="fk_c_exp_tax_cat">';
 								print $form->selectExpenseCategories($selectedCat, 'fk_c_exp_tax_cat', 1, array());
-								print '</td>';
-								print '<td class="fk_c_exp_tax_range">';
-								print $formexpensereport->selectIkRange($selectedRange, 'fk_c_exp_tax_range', 1, true, $selectedCat);
 								print '</td>';
 							}
 
@@ -2490,7 +2478,6 @@ if ($action == 'create')
 					print '<td class="center">'.$langs->trans('Type').'</td>';
 					if (!empty($conf->global->MAIN_USE_EXPENSE_IK)) {
 						print '<td>'.$langs->trans('VehicleCategory').'</td>';
-                        print '<td>'.$langs->trans('RangeIk').'</td>';
 					}
 					print '<td>'.$langs->trans('Description').'</td>';
 					print '<td class="right">'.$langs->trans('VAT').'</td>';
@@ -2528,12 +2515,8 @@ if ($action == 'create')
 
 					if (!empty($conf->global->MAIN_USE_EXPENSE_IK)) {
                         $fk_c_exp_tax_cat = GETPOST('fk_c_exp_tax_cat', 'int');
-                        $fk_c_exp_tax_range = GETPOST('fk_c_exp_tax_range', 'int');
 						print '<td class="fk_c_exp_tax_cat">';
 						print $form->selectExpenseCategories($fk_c_exp_tax_cat, 'fk_c_exp_tax_cat', 1, array(), '', 0, array(), 0);
-						print '</td>';
-						print '<td class="fk_c_exp_tax_range">';
-                        print $formexpensereport->selectIkRange($fk_c_exp_tax_range, 'fk_c_exp_tax_range', 1, true, -1);
 						print '</td>';
 					}
 
@@ -2589,12 +2572,6 @@ if ($action == 'create')
                     if ($vehicleCategory <= 0) {
                         $vehicleCategory = 0;
                     }
-
-                    $range = ! empty($fk_c_exp_tax_range) ? $fk_c_exp_tax_range : $userauthor->default_range;
-
-                    if ($range <= 0) {
-                        $range = -1;
-                    }
                 }
 
 				print '<script type="text/javascript">
@@ -2603,7 +2580,6 @@ if ($action == 'create')
 				jQuery(document).ready(function() {
                     var $expenseTypeSelect = jQuery("select[name=fk_c_type_fees]");
                     var $vehicleCategorySelect = jQuery("select[name=fk_c_exp_tax_cat]");
-                    var $rangeSelect = jQuery("select[name=fk_c_exp_tax_range]");
                     var $vatSelect = jQuery("select[name=vatrate]");
                     var $unitPriceBeforeTaxesInput = jQuery("input[name=value_unit_ht]");
                     var $unitPriceIncludingTaxesInput = jQuery("input[name=value_unit]");
@@ -2653,91 +2629,21 @@ if ($action == 'create')
                             $("td.colnewlineheaderqty").html("'. dol_escape_js($langs->transnoentities('Qty'), 2).'");
                             $unitPriceBeforeTaxesInput.removeAttr("disabled").val("").trigger("change");
                             $unitPriceIncludingTaxesInput.removeAttr("disabled").val("").trigger("change");
-                            $vehicleCategorySelect.val("0").attr("disabled", "").trigger("change");
-                        }
-                    });';
+                            $vehicleCategorySelect.val("0").attr("disabled", "").trigger("change");';
 
                 if ($handleIk) {
                     print '
-
-                    function clearRangeSelect($rangeSelect)
-                    {
-                        $rangeSelect.children("option").each(function (index, element) {
-                            var $option = jQuery(element);
-
-                            if ($option.attr("value") != "-1") {
-                                $option.remove();
-                            }
-                        });
-
-                        $rangeSelect.attr("disabled", "").trigger("change");
-                    }
-
-                    $vehicleCategorySelect.on("change", function() {
-                        var newCategory = $vehicleCategorySelect.val();
-
-                        if (! newCategory || newCategory.length == 0 || newCategory == "0") {
-                            clearRangeSelect($rangeSelect);
-
-                            return true;
-                        }
-
-                        jQuery.ajax({
-                            method: "POST",
-                            dataType: "json",
-                            data: { fk_c_exp_tax_cat: newCategory },
-                            url: "'.dol_buildpath('/expensereport/ajax/ajaxik.php', 1).'",
-                        }).done(function (data) {
-                            clearRangeSelect($rangeSelect)
-
-                            if (data.error) {
-                                jQuery.jnotify(data.error, "error");
-                            } else {
-                                for (let id in data) {
-                                    $newOption = jQuery("<option>").val(id).html(data[id].label);
-
-                                    for (let key in data[id].data) {
-                                        $newOption.attr("data-"+key, data[id].data[key]);
-                                    }
-
-                                    $rangeSelect.append($newOption);
-                                }
-                            }
-
-                            $rangeSelect.val("'.$range.'").removeAttr("disabled").trigger("change");
-                        });
-
-                        return true;
-                    });
-
-                    $rangeSelect.on("change", function() {
-                        var range = $rangeSelect.val();
-
-                        if (range == "-1") {
-                            $unitPriceIncludingTaxesInput.val("").trigger("change");
-                            return true;
-                        }
-
-                        var $selectedOption = $rangeSelect.children("option:selected");
-
-                        if ($selectedOption.is("[data-coef]")) {
-                            var coef = $selectedOption.attr("data-coef");
-
-                            $unitPriceIncludingTaxesInput.val(coef).trigger("change");
-                        } else {
-                            $unitPriceIncludingTaxesInput.val("").trigger("change");
-                        }
-                    });
-
-                    $expenseTypeSelect.trigger("change");';
+                        }';
                 }
 
                 print '
+                    });
+
+                    $expenseTypeSelect.trigger("change");
 
                     // disabled attribute does not send data, remove it before submit
                     jQuery("form").on("submit", function() {
                         $vehicleCategorySelect.removeAttr("disabled");
-                        $rangeSelect.removeAttr("disabled");
                         $vatSelect.removeAttr("disabled");
                         $unitPriceBeforeTaxesInput.removeAttr("disabled");
                         $unitPriceIncludingTaxesInput.removeAttr("disabled");
