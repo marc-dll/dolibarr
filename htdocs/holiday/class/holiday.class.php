@@ -259,6 +259,17 @@ class Holiday extends CommonObject
 		if (empty($this->fk_validator) || !is_numeric($this->fk_validator) || $this->fk_validator < 0) { $this->error = "ErrorBadParameterFkValidator"; return -1; }
 		if (empty($this->fk_type) || !is_numeric($this->fk_type) || $this->fk_type < 0) { $this->error = "ErrorBadParameterFkType"; return -1; }
 
+		$checkBalance = getDictvalue(MAIN_DB_PREFIX.'c_holiday_types', 'block_if_negative', $this->fk_type);
+
+		if ($checkBalance > 0) {
+			$balance = $this->getCPforUser($this->fk_user, $this->fk_type);
+
+			if ($balance < 0) {
+				$this->error = 'LeaveRequestCreationBlockedBecauseBalanceIsNegative';
+				return -1;
+			}
+		}
+
 		// Insert request
 		$sql = "INSERT INTO ".MAIN_DB_PREFIX."holiday(";
 		$sql .= "ref,";
