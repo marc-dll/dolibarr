@@ -1120,3 +1120,7 @@ AffectTag=Affecter une catégorie
 ConfirmAffectTag=Affectation de catégories en masse
 ConfirmAffectTagQuestion=Êtes-vous sur de vouloir affecter ces catégories aux %s lignes sélectionnées ?
 CategTypeNotFound=Aucune catégorie trouvée
+ConfirmMassLeaveApprovalQuestion=Êtes-vous sur de vouloir approuver les %s enregistrement(s) sélectionné(s) ?
+ConfirmMassLeaveApproval=Confirmation d'approbation de congé en masse
+RecordAproved=Enregistrement approuvé
+RecordsApproved=%s enregistrement(s) approuvé(s)
