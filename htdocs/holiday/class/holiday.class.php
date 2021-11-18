@@ -703,6 +703,16 @@ class Holiday extends CommonObject
 		global $conf, $langs;
 		$error = 0;
 
+		$checkBalance = getDictvalue(MAIN_DB_PREFIX.'c_holiday_types', 'block_if_negative', $this->fk_type);
+
+		if ($checkBalance > 0) {
+			$balance = $this->getCPforUser($this->fk_user, $this->fk_type);
+
+			if ($balance < 0) {
+				$this->error = 'LeaveRequestCreationBlockedBecauseBalanceIsNegative';
+				return -1;
+			}
+		}
 		// Define new ref
 		if (!$error && (preg_match('/^[\(]?PROV/i', $this->ref) || empty($this->ref) || $this->ref == $this->id))
 		{
@@ -770,6 +780,16 @@ class Holiday extends CommonObject
 		global $conf, $langs;
 		$error = 0;
 
+		$checkBalance = getDictvalue(MAIN_DB_PREFIX.'c_holiday_types', 'block_if_negative', $this->fk_type);
+
+		if ($checkBalance > 0) {
+			$balance = $this->getCPforUser($this->fk_user, $this->fk_type);
+
+			if ($balance < 0) {
+				$this->error = 'LeaveRequestCreationBlockedBecauseBalanceIsNegative';
+				return -1;
+			}
+		}
 		// Update request
 		$sql = "UPDATE ".MAIN_DB_PREFIX."holiday SET";
 
@@ -864,6 +884,7 @@ class Holiday extends CommonObject
 			$this->db->rollback();
 			return -1 * $error;
 		} else {
+
 			$this->db->commit();
 			return 1;
 		}
@@ -880,6 +901,16 @@ class Holiday extends CommonObject
 	{
 		global $conf, $langs;
 		$error = 0;
+		$checkBalance = getDictvalue(MAIN_DB_PREFIX.'c_holiday_types', 'block_if_negative', $this->fk_type);
+
+		if ($checkBalance > 0) {
+			$balance = $this->getCPforUser($this->fk_user, $this->fk_type);
+
+			if ($balance < 0) {
+				$this->error = 'LeaveRequestCreationBlockedBecauseBalanceIsNegative';
+				return -1;
+			}
+		}
 
 		// Update request
 		$sql = "UPDATE ".MAIN_DB_PREFIX."holiday SET";
@@ -1641,7 +1672,6 @@ class Holiday extends CommonObject
 					$sql .= " WHERE u.entity IN (".getEntity('user').")";
 				}
 				$sql .= " AND u.statut > 0";
-				$sql .= " AND u.employee = 1"; // We only want employee users for holidays
 				if ($filters) $sql .= $filters;
 
 				$resql = $this->db->query($sql);
@@ -1732,7 +1762,6 @@ class Holiday extends CommonObject
 				}
 
 				$sql .= " AND u.statut > 0";
-				$sql .= " AND u.employee = 1"; // We only want employee users for holidays
 				if ($filters) $sql .= $filters;
 
 				$resql = $this->db->query($sql);
@@ -2061,7 +2090,7 @@ class Holiday extends CommonObject
 	{
 		global $mysoc;
 
-		$sql = "SELECT rowid, code, label, affect, delay, newbymonth";
+		$sql = "SELECT rowid, code, label, affect, delay, newByMonth";
 		$sql .= " FROM ".MAIN_DB_PREFIX."c_holiday_types";
 		$sql .= " WHERE (fk_country IS NULL OR fk_country = ".$mysoc->country_id.')';
 		if ($active >= 0) $sql .= " AND active = ".((int) $active);
@@ -2075,7 +2104,7 @@ class Holiday extends CommonObject
 			{
 				while ($obj = $this->db->fetch_object($result))
 				{
-					$types[$obj->rowid] = array('rowid'=> $obj->rowid, 'code'=> $obj->code, 'label'=>$obj->label, 'affect'=>$obj->affect, 'delay'=>$obj->delay, 'newByMonth'=>$obj->newbymonth);
+					$types[$obj->rowid] = array('rowid'=> $obj->rowid, 'code'=> $obj->code, 'label'=>$obj->label, 'affect'=>$obj->affect, 'delay'=>$obj->delay, 'newByMonth'=>$obj->newByMonth);
 				}
 
 				return $types;
@@ -2261,7 +2290,7 @@ class Holiday extends CommonObject
 			$response->warning_delay = $conf->holiday->approve->warning_delay / 60 / 60 / 24;
 			$response->label = $langs->trans("HolidaysToApprove");
 			$response->labelShort = $langs->trans("ToApprove");
-			$response->url = DOL_URL_ROOT.'/holiday/list.php?search_status=2&amp;mainmenu=hrm&amp;leftmenu=holiday';
+			$response->url = DOL_URL_ROOT.'/holiday/list.php?search_statut=2&amp;mainmenu=hrm&amp;leftmenu=holiday';
 			$response->img = img_object('', "holiday");
 
 			while ($obj = $this->db->fetch_object($resql))
