@@ -58,16 +58,6 @@ $staticrecruitmentcandidature = new RecruitmentCandidature($db);
 $max = $conf->global->MAIN_SIZE_SHORTLIST_LIMIT;
 
 
-/*
- * Actions
- */
-
-// Update sold
-if (!empty($conf->holiday->enabled) && !empty($setupcompanynotcomplete))
-{
-	$result = $holiday->updateBalance();
-}
-
 
 /*
  * View
