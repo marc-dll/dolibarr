@@ -785,12 +785,13 @@ class ActionComm extends CommonObject
                 $this->fetch_optionals();
 
                 $this->fetchResources();
-			}
-			$this->db->free($resql);
-		} else {
-			$this->error = $this->db->lasterror();
-			return -1;
-		}
+            }
+
+            $this->db->free($resql);
+        } else {
+            $this->error = $this->db->lasterror();
+            return -1;
+        }
 
 		return $num;
 	}
