@@ -1991,6 +1991,10 @@ class ExpenseReport extends CommonObject
         $distanceBefore = $this->getIkDistanceInYear();
         $distanceAfter = $distanceBefore + $this->line->qty;
 
+        if ($distanceBefore < 0 || $distanceAfter < 0) {
+            return false;
+        }
+
         $rangeBefore = null;
         $rangeAfter = null;
 
@@ -2033,9 +2037,11 @@ class ExpenseReport extends CommonObject
 
         $sql = 'SELECT SUM(ed.qty) as distance';
         $sql .= ' FROM '.MAIN_DB_PREFIX.'expensereport_det ed';
+        $sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'expensereport e ON e.rowid = ed.fk_expensereport';
         $sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'c_type_fees tf ON tf.id = ed.fk_c_type_fees';
         $sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'c_exp_tax_cat etc ON etc.rowid = ed.fk_c_exp_tax_cat';
         $sql .= ' WHERE tf.code = \'EX_KME\'';
+        $sql .= ' AND e.fk_user_author = ' . intval($this->fk_user_author);
         $sql .= ' AND ed.rowid != ' . intval($this->line->id);
         $sql .= ' '.dolSqlDateFilter('ed.date', 0, 0, dol_print_date($this->line->date, '%Y'));
         $sql .= ' AND ed.fk_c_exp_tax_cat = '.intval($this->line->fk_c_exp_tax_cat);
@@ -2043,8 +2049,7 @@ class ExpenseReport extends CommonObject
         $resql = $this->db->query($sql);
 
         if (! $resql) {
-            dol_print_error($this->db);
-            $this->error = $this->db->lasterror;
+            $this->error = $this->db->lasterror();
             return -1;
         }
 
