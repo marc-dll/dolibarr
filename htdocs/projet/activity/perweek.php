@@ -378,7 +378,7 @@ if ($id) {
 	$project->fetch_thirdparty();
 }
 
-$onlyopenedproject = 1; // or -1
+$onlyopenedproject = -1; // or -1
 $morewherefilter = '';
 
 if ($search_project_ref) {
