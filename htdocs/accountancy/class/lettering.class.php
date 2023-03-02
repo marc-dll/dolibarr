@@ -654,7 +654,7 @@ class Lettering extends BookKeeping
 			// Get all fk_doc by doc_type from bank ids
 			$sql = "SELECT DISTINCT dp." . $doc_type_info['doc_payment_table_fk_doc'] . " AS fk_doc";
 			$sql .= " FROM " . MAIN_DB_PREFIX . $doc_type_info['payment_table'] . " AS p";
-			$sql .= " LEFT JOIN " . MAIN_DB_PREFIX . $doc_type_info['doc_payment_table'] . " AS dp ON dp." . $doc_type_info['doc_payment_table_fk_payment'] . " = p.rowid";
+			$sql .= " INNER JOIN " . MAIN_DB_PREFIX . $doc_type_info['doc_payment_table'] . " AS dp ON dp." . $doc_type_info['doc_payment_table_fk_payment'] . " = p.rowid";
 			$sql .= " WHERE p." . $doc_type_info['payment_table_fk_bank'] . " IN (" . $this->db->sanitize(implode(',', $bank_ids)) . ")";
 			$sql .= " AND dp." . $doc_type_info['doc_payment_table_fk_doc'] . " > 0";
 
@@ -706,7 +706,7 @@ class Lettering extends BookKeeping
 		// Get all fk_doc by doc_type from bank ids
 		$sql = "SELECT DISTINCT p." . $doc_type_info['payment_table_fk_bank'] . " AS fk_doc";
 		$sql .= " FROM " . MAIN_DB_PREFIX . $doc_type_info['payment_table'] . " AS p";
-		$sql .= " LEFT JOIN " . MAIN_DB_PREFIX . $doc_type_info['doc_payment_table'] . " AS dp ON dp." . $doc_type_info['doc_payment_table_fk_payment'] . " = p.rowid";
+		$sql .= " INNER JOIN " . MAIN_DB_PREFIX . $doc_type_info['doc_payment_table'] . " AS dp ON dp." . $doc_type_info['doc_payment_table_fk_payment'] . " = p.rowid";
 		$sql .= " WHERE dp." . $doc_type_info['doc_payment_table_fk_doc'] . " IN (" . $this->db->sanitize(implode(',', $document_ids)) . ")";
 		$sql .= " AND p." . $doc_type_info['payment_table_fk_bank'] . " > 0";
 
