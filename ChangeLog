@@ -3,15 +3,6 @@ English Dolibarr ChangeLog
 --------------------------------------------------------------
 
 
-***** ChangeLog for 18.0.0 compared to 17.0.0 *****
-
-WARNING:
-
-Following changes may create regressions for some external modules, but were necessary to make Dolibarr better:
-* The deprecated method escapeunderscore() of database handlers has been removed. You must use escapeforlike instead.
-
-
-
 
 ***** ChangeLog for 17.0.0 compared to 16.0.0 *****
 
@@ -176,6 +167,7 @@ NEW: VAT - Admin - Add information on deadline day for submission of VAT declara
 NEW: expand/collapse permissions on user permission page
 NEW: Show delivery mode on PDF for proposals
 NEW: Add the target to select attendees of event for emailings
+NEW: Can set background style with MAIN_LOGIN_BACKGROUND_STYLE
 
  Modules
 NEW: Experimental module Asset
@@ -183,7 +175,7 @@ NEW: Experimental module Asset
 For developers or integrators:
 ------------------------------
 
-NEW: ModuleBuilder can generate code of class from an existing SQL table
+NEW: ModuleBuilder can generate code for a class from an existing SQL table
 NEW: #22370 Modulebuilder supports 'alwayseditable' (like extrafields)
 NEW: #20912 Add trigger to record the event of sending an email from a project
 NEW: #21750 Added "Get lines and Post lines from BOM" at the REST Service
@@ -196,48 +188,64 @@ NEW: hook to modify supplier product html select
 NEW: Add new hook for show virtual stock details on product stock card
 NEW: Add new hooks for actioncomm
 NEW: conf->global->SYSLOG_FILE_ONEPERSESSION accept a string
-NEW: translate for contact type API, setup/ticket API, shipping method API
-NEW: All ajax pages have now a top_httphead()
+NEW: translation for contact type API, setup/ticket API, shipping method API
+NEW: All ajax pages have now a header build with top_httphead()
 NEW: support multilang in Civilities API
 NEW: Add API for the partnership module
 NEW: Add "Get lines and Post lines from BOM" in the API
-NEW: Replace fk_categories_product with categories_product in inventory
-NEW: Rewrite of SQL request. Removed the join on category (for filter on categ), replaced with a EXISTS/NOT
+NEW: Replace property fk_categories_product with categories_product in inventory class
+NEW: Rewrite of SQL request. Removed the join on category table (for filter on category), replaced with a EXISTS/NOT
 
 
 WARNING:
 
 Following changes may create regressions for some external modules, but were necessary to make Dolibarr better:
 * Minimal PHP version is now PHP 7.0 instead of PHP 5.6
-* The signature of method getNomUrl() of class ProductFournisseur has been modified to match the signature of method Product
+* The signature of method getNomUrl() of class ProductFournisseur has been modified to match the signature of method Product->getNomUrl()
 * Trigger ORDER_SUPPLIER_DISPATCH is removed, use ORDER_SUPPLIER_RECEIVE and/or LINEORDER_SUPPLIER_DISPATCH instead.
 * All functions fetch_all() have been set to deprecated for naming consitency, use fetchAll() instead.
 * Code standardization: '$user->rights->propale' is now '$user->rights->propal' everywhere.
 * Deprecated method set_billed() on shipment and reception class has been removed. Use setBilled() instead.
 * Tables llx_prelevement_facture and llx_prelevement_facture_demande have been renamed into llx_prelevement and llx_prelevement_demande.
 * Rename MAIN_LIST_ALLOW_NOTES into MAIN_LIST_HIDE_NOTES and rename MAIN_LIST_ALLOW_PRIVATE_NOTES into MAIN_LIST_HIDE_PRIVATE_NOTES
-* Rename the substitution for project label instead of project title in substitution variables
+* Rename the substitution for "project label" instead of "project title" in substitution variables
+* You must use "$objectoffield" to manipulate the current object inside the formulare of computed custom extrafields instead of $obj/$object.
+* Making a global search is sending the parameter using always the name search_all (instead of sometimes sall and search_all)
+* The property $url_last_version must be public if defined into module descriptor files;
 
 
-***** ChangeLog for 16.0.4 compared to 16.0.2 *****
+***** ChangeLog for 16.0.4 compared to 16.0.3 *****
 
 FIX: Amount of localtax1 and 2 not correctly save on purchase order (the rate was saved instead)
 FIX: #20415
 FIX: #21280
 FIX: #23008
 FIX: #22271
+FIX: #22524
 FIX: #22837
+FIX: #22964
+FIX: #23012
 FIX: #23019 Impossible to add task times to an existing draft invoice
 FIX: #23072
 FIX: #23087
 FIX: #23115 
 FIX: #23116
 FIX: #23281
+FIX: #23420 : wrong check on $search_categ value causing FATAL ERROR
+FIX: Accountancy - Quadra export
+FIX: add border left on image product when conf activated
+FIX: Add missing token when deleting template inn order_supplier admin menu
+FIX: Amount of localtax1 and 2 not correctly save on purchase order (the
+FIX: API access for deactivated users
 FIX: bad selection of barcode numbering module
 FIX: Can't see all time spent by all user
 FIX: CI
 FIX: CommonObject - showOptionals - Display blank td when MAIN_VIEW_LINE_NUMBER is enabled and action is confirm_valid
 FIX: Documents API inconsistency
+FIX: Empty FormSetup emailTemplate type IF empty fieldvalue
+FIX: Errors Handling for CreateFrom Hooks
+FIX: error with dol_banner_tab, ref is needed
+FIX: ExpenseReport card was not reloaded after addline
 FIX: #23075
 FIX: #23117
 FIX: get multicurrency infos of propal when create order from propal with "WORKFLOW_PROPAL_AUTOCREATE_ORDER" conf
@@ -245,12 +253,16 @@ FIX: Give predictable order to inventory lines
 FIX: include class multicurrency
 FIX: methods declaration (backport fix 67b9a7dc07d708231d12b5e58800334d4a01ef98)
 FIX: multicurrency_tx and not currency_tx
-FIX: PGSQL Integer type does not have a free length
+FIX: on public ticket list, only the page 1 was accessible. Other pages were 404 error.
+FIX: PGSQL Integer type does not have a free lenght
+FIX: PGSQL Int type does not have a free lenght
 FIX: Product list in setup.php in new Module
 FIX: propal and order stats broken on Tag+User(retricted customer list)
 FIX: saving of numbering module for jobs
 FIX: Stickler
 FIX: travis
+FIX: wrong check on $search_categ value causing fatal error
+FIX: wrong stock list with multicompany and without stock sharing
 
 ***** ChangeLog for 16.0.3 compared to 16.0.2 *****
 

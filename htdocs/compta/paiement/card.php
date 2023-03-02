@@ -46,6 +46,10 @@ $action = GETPOST('action', 'aZ09');
 $confirm = GETPOST('confirm', 'alpha');
 $backtopage = GETPOST('backtopage', 'alpha');
 
+$socid = GETPOST('socid', 'int'); if ($socid < 0) {
+	$socid = 0;
+}
+
 $object = new Paiement($db);
 // Initialize technical object to manage hooks of page. Note that conf->hooks_modules contains array of hook context
 $hookmanager->initHooks(array('paymentcard', 'globalcard'));
@@ -238,7 +242,7 @@ $thirdpartystatic = new Societe($db);
 
 $result = $object->fetch($id, $ref);
 if ($result <= 0) {
-	dol_print_error($db, 'Payement '.$id.' not found in database');
+	dol_print_error($db, 'Payment '.$id.' not found in database');
 	exit;
 }
 

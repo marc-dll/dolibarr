@@ -597,7 +597,7 @@ if ($resql) {
 		}
 
 		print '<td class="liste_titre maxwidthonsmartphone left">';
-		print $form->select_dolusers($search_employee, "search_employee", 1, "", $disabled, $include, '', 0, 0, 0, $morefilter, 0, '', 'maxwidth150');
+		print $form->select_dolusers($search_employee, "search_employee", 1, "", $disabled, $include, '', 0, 0, 0, $morefilter, 0, '', 'maxwidth125');
 		print '</td>';
 	}
 
@@ -607,12 +607,12 @@ if ($resql) {
 			print '<td class="liste_titre maxwidthonsmartphone left">';
 			$validator = new UserGroup($db);
 			$excludefilter = $user->admin ? '' : 'u.rowid <> '.$user->id;
-			$valideurobjects = $validator->listUsersForGroup($excludefilter);
+			$valideurobjects = $validator->listUsersForGroup($excludefilter, 1);
 			$valideurarray = array();
 			foreach ($valideurobjects as $val) {
 				$valideurarray[$val->id] = $val->id;
 			}
-			print $form->select_dolusers($search_valideur, "search_valideur", 1, "", 0, $valideurarray, '', 0, 0, 0, $morefilter, 0, '', 'maxwidth150');
+			print $form->select_dolusers($search_valideur, "search_valideur", 1, "", 0, $valideurarray, '', 0, 0, 0, $morefilter, 0, '', 'maxwidth125');
 			print '</td>';
 		} else {
 			print '<td class="liste_titre">&nbsp;</td>';
@@ -632,7 +632,7 @@ if ($resql) {
 				//$labeltoshow .= ($val['delay'] > 0 ? ' ('.$langs->trans("NoticePeriod").': '.$val['delay'].' '.$langs->trans("days").')':'');
 				$arraytypeleaves[$val['rowid']] = $labeltoshow;
 			}
-			print $form->selectarray('search_type', $arraytypeleaves, $search_type, 1, 0, 0, '', 0, 0, 0, '', '', 1);
+			print $form->selectarray('search_type', $arraytypeleaves, $search_type, 1, 0, 0, '', 0, 0, 0, '', 'maxwidth100', 1);
 		}
 		print '</td>';
 	}
@@ -827,6 +827,9 @@ if ($resql) {
 					print '<input id="cb'.$obj->rowid.'" class="flat checkforselect" type="checkbox" name="toselect[]" value="'.$obj->rowid.'"'.($selected ? ' checked="checked"' : '').'>';
 				}
 				print '</td>';
+				if (!$i) {
+					$totalarray['nbfield']++;
+				}
 			}
 			if (!empty($arrayfields['cp.ref']['checked'])) {
 				print '<td class="nowraponall">';
@@ -849,8 +852,11 @@ if ($resql) {
 				}
 			}
 			if (!empty($arrayfields['cp.fk_type']['checked'])) {
-				$labeltypeleavetoshow = ($langs->trans($typeleaves[$obj->fk_type]['code']) != $typeleaves[$obj->fk_type]['code'] ? $langs->trans($typeleaves[$obj->fk_type]['code']) : $typeleaves[$obj->fk_type]['label']);
-				$labeltypeleavetoshow = empty($typeleaves[$obj->fk_type]['label']) ? $langs->trans("TypeWasDisabledOrRemoved", $obj->fk_type) : $labeltypeleavetoshow;
+				if (empty($typeleaves[$obj->fk_type])) {
+					$labeltypeleavetoshow = $langs->trans("TypeWasDisabledOrRemoved", $obj->fk_type);
+				} else {
+					$labeltypeleavetoshow = ($langs->trans($typeleaves[$obj->fk_type]['code']) != $typeleaves[$obj->fk_type]['code'] ? $langs->trans($typeleaves[$obj->fk_type]['code']) : $typeleaves[$obj->fk_type]['label']);
+				}
 
 				print '<td class="tdoverflowmax100" title="'.dol_escape_htmltag($labeltypeleavetoshow).'">';
 				print $labeltypeleavetoshow;
@@ -941,9 +947,9 @@ if ($resql) {
 					print '<input id="cb'.$obj->rowid.'" class="flat checkforselect" type="checkbox" name="toselect[]" value="'.$obj->rowid.'"'.($selected ? ' checked="checked"' : '').'>';
 				}
 				print '</td>';
-			}
-			if (!$i) {
-				$totalarray['nbfield']++;
+				if (!$i) {
+					$totalarray['nbfield']++;
+				}
 			}
 
 			print '</tr>'."\n";
@@ -954,6 +960,9 @@ if ($resql) {
 		// Add a line for total if there is a total to show
 		if (!empty($arrayfields['duration']['checked'])) {
 			print '<tr class="total">';
+			if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+				print '<td></td>';
+			}
 			foreach ($arrayfields as $key => $val) {
 				if (!empty($val['checked'])) {
 					if ($key == 'duration') {
@@ -964,7 +973,9 @@ if ($resql) {
 				}
 			}
 			// status
-			print '<td></td>';
+			if (!getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+				print '<td></td>';
+			}
 			print '</tr>';
 		}
 	}

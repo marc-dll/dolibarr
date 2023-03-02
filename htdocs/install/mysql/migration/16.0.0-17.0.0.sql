@@ -64,6 +64,7 @@ ALTER TABLE llx_actioncomm ADD INDEX idx_actioncomm_percent (percent);
 
 UPDATE llx_c_paiement SET code = 'BANCON' WHERE code = 'BAN' AND libelle = 'Bancontact';
 
+ALTER TABLE llx_partnership DROP FOREIGN KEY llx_partnership_fk_user_creat;
 -- VMYSQL4.3 ALTER TABLE llx_partnership MODIFY COLUMN fk_user_creat integer NULL;
 -- VPGSQL8.2 ALTER TABLE llx_partnership ALTER COLUMN fk_user_creat DROP NOT NULL;
 
@@ -140,6 +141,9 @@ INSERT INTO llx_c_hrm_public_holiday (code, entity, fk_country, dayrule, year, m
 ALTER TABLE llx_societe_rib ADD COLUMN state_id integer AFTER default_rib;
 ALTER TABLE llx_societe_rib ADD COLUMN fk_country integer AFTER state_id;
 ALTER TABLE llx_societe_rib ADD COLUMN currency_code varchar(3) AFTER fk_country;
+
+DELETE FROM llx_societe_rib WHERE fk_soc = 0;
+ALTER TABLE llx_societe_rib ADD CONSTRAINT llx_societe_rib_fk_societe FOREIGN KEY (fk_soc) REFERENCES llx_societe(rowid);
 
 ALTER TABLE llx_user_rib ADD COLUMN state_id integer AFTER owner_address;
 ALTER TABLE llx_user_rib ADD COLUMN fk_country integer AFTER state_id;
@@ -390,3 +394,10 @@ ALTER TABLE llx_opensurvey_user_studs ADD COLUMN date_creation datetime NULL;
 ALTER TABLE llx_opensurvey_comments ADD COLUMN date_creation datetime NULL;
 
 ALTER TABLE llx_c_tva ADD COLUMN use_default tinyint DEFAULT 0;
+
+ALTER TABLE llx_commande_fournisseurdet MODIFY COLUMN ref varchar(128);
+ALTER TABLE llx_facture_fourn_det MODIFY COLUMN ref varchar(128);
+
+ALTER TABLE llx_projet ADD COLUMN extraparams varchar(255);
+
+

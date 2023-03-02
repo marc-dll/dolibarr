@@ -6,7 +6,7 @@
  * Copyright (C) 2013       Peter Fontaine       <contact@peterfontaine.fr>
  * Copyright (C) 2015-2016  Marcos García        <marcosgdf@gmail.com>
  * Copyright (C) 2017       Ferran Marcet        <fmarcet@2byte.es>
- * Copyright (C) 2018-2021  Thibault FOUCART     <support@ptibogxiv.net>
+ * Copyright (C) 2018-2023  Thibault FOUCART     <support@ptibogxiv.net>
  * Copyright (C) 2021       Alexandre Spangaro   <aspangaro@open-dsi.fr>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -1116,14 +1116,14 @@ if ($socid && $action != 'edit' && $action != 'create' && $action != 'editcard' 
 								}
 								print '<a href="'.$url.'" target="_stripe">'.img_picto($langs->trans('ShowInStripe').' - Customer and Publishable key = '.$companypaymentmodetemp->stripe_account, 'globe').'</a> ';
 							}
-							print $companypaymentmodetemp->stripe_card_ref;
+							print dol_escape_htmltag($companypaymentmodetemp->stripe_card_ref);
 							print '</td>';
 							// Type
 							print '<td>';
 							print img_credit_card($companypaymentmodetemp->type);
 							print '</td>';
 							// Information (Owner, ...)
-							print '<td>';
+							print '<td class="minwidth100">';
 							if ($companypaymentmodetemp->proprio) {
 								print '<span class="opacitymedium">'.$companypaymentmodetemp->proprio.'</span><br>';
 							}
@@ -1133,7 +1133,9 @@ if ($socid && $action != 'edit' && $action != 'create' && $action != 'editcard' 
 							if ($companypaymentmodetemp->exp_date_month || $companypaymentmodetemp->exp_date_year) {
 								print ' - '.sprintf("%02d", $companypaymentmodetemp->exp_date_month).'/'.$companypaymentmodetemp->exp_date_year.'';
 							}
-							print '</td><td>';
+							print '</td>';
+							// Country
+							print '<td class="tdoverflowmax100">';
 							if ($companypaymentmodetemp->country_code) {
 								$img = picto_from_langcode($companypaymentmodetemp->country_code);
 								print $img ? $img.' ' : '';
@@ -1152,12 +1154,13 @@ if ($socid && $action != 'edit' && $action != 'create' && $action != 'editcard' 
 								print img_picto($langs->trans("Default"), 'on');
 							}
 							print '</td>';
-							print '<td>';
 							if (empty($companypaymentmodetemp->stripe_card_ref)) {
-								print $langs->trans("Local");
+								$s = $langs->trans("Local");
 							} else {
-								print $langs->trans("LocalAndRemote");
+								$s = $langs->trans("LocalAndRemote");
 							}
+							print '<td class="tdoverflowmax100" title="'.dol_escape_htmltag($s).'">';
+							print $s;
 							print '</td>';
 							print '<td>';
 							print dol_print_date($companypaymentmodetemp->tms, 'dayhour');
@@ -1167,7 +1170,7 @@ if ($socid && $action != 'edit' && $action != 'create' && $action != 'editcard' 
 							$reshook = $hookmanager->executeHooks('printFieldListValue', $parameters, $object); // Note that $action and $object may have been modified by hook
 							print $hookmanager->resPrint;
 							// Action column
-							print '<td class="right nowraponall">';
+							print '<td class="right minwidth50 nowraponall">';
 							if ($permissiontoaddupdatepaymentinformation) {
 								if ($stripecu && empty($companypaymentmodetemp->stripe_card_ref)) {
 									print '<a href="'.$_SERVER['PHP_SELF'].'?action=synccardtostripe&socid='.$object->id.'&id='.$companypaymentmodetemp->id.'" class="paddingrightonly marginrightonly">'.$langs->trans("CreateCardOnStripe").'</a>';
@@ -1378,7 +1381,7 @@ if ($socid && $action != 'edit' && $action != 'create' && $action != 'editcard' 
 
 		if (is_array($currencybalance)) {
 			foreach ($currencybalance as $cpt) {
-				print '<tr><td>'.$langs->trans("Currency".strtoupper($cpt['currency'])).'</td><td>'.price($cpt['available'], 0, '', 1, - 1, - 1, strtoupper($cpt['currency'])).'</td><td>'.price($cpt->pending, 0, '', 1, - 1, - 1, strtoupper($cpt['currency'])).'</td><td>'.price($cpt['available'] + $cpt->pending, 0, '', 1, - 1, - 1, strtoupper($cpt['currency'])).'</td></tr>';
+				print '<tr><td>'.$langs->trans("Currency".strtoupper($cpt['currency'])).'</td><td>'.price($cpt['available'], 0, '', 1, - 1, - 1, strtoupper($cpt['currency'])).'</td><td>'.price(isset($cpt->pending)?$cpt->pending:0, 0, '', 1, - 1, - 1, strtoupper($cpt['currency'])).'</td><td>'.price($cpt['available'] + (isset($cpt->pending)?$cpt->pending:0), 0, '', 1, - 1, - 1, strtoupper($cpt['currency'])).'</td></tr>';
 			}
 		}
 
@@ -1452,7 +1455,6 @@ if ($socid && $action != 'edit' && $action != 'create' && $action != 'editcard' 
 			// Bank name
 			print '<td class="tdoverflowmax100" title="'.dol_escape_htmltag($rib->bank).'">'.dol_escape_htmltag($rib->bank).'</td>';
 			// Account number
-			print '<td>';
 			$string = '';
 			foreach ($rib->getFieldsToShow() as $val) {
 				if ($val == 'BankCode') {
@@ -1478,7 +1480,7 @@ if ($socid && $action != 'edit' && $action != 'create' && $action != 'editcard' 
 					$string .= ' '.img_picto($langs->trans("ValueIsValid"), 'info');
 				}
 			}
-
+			print '<td class="tdoverflowmax150" title="'.dol_escape_htmltag($string).'">';
 			print $string;
 			print '</td>';
 			// IBAN
