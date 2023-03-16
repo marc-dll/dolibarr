@@ -8963,6 +8963,9 @@ function dol_eval($s, $returnvalue = 0, $hideerrors = 1, $onlysimplestring = '1'
 				}
 			}
 		}
+		if (is_array($s) || $s === 'Array') {
+			return 'Bad string syntax to evaluate (value is Array) '.var_export($s, true);
+		}
 		if (strpos($s, '::') !== false) {
 			if ($returnvalue) {
 				return 'Bad string syntax to evaluate (double : char is forbidden): '.$s;
@@ -11620,7 +11623,10 @@ function dolForgeCriteriaCallback($matches)
 		return '';
 	}
 
-	$operator = strtoupper(preg_replace('/[^a-z<>=]/i', '', trim($tmp[1])));
+	$operand = preg_replace('/[^a-z0-9\._]/i', '', trim($tmp[0]));
+
+	$operator = strtoupper(preg_replace('/[^a-z<>!=]/i', '', trim($tmp[1])));
+
 	if ($operator == 'NOTLIKE') {
 		$operator = 'NOT LIKE';
 	}
@@ -11658,7 +11664,7 @@ function dolForgeCriteriaCallback($matches)
 		}
 	}
 
-	return $db->escape($tmp[0]).' '.strtoupper($operator).' '.$tmpescaped;
+	return $db->escape($operand).' '.strtoupper($operator).' '.$tmpescaped;
 }
 
 
