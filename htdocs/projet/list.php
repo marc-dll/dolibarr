@@ -501,7 +501,6 @@ if ($search_opp_percent) {
 $sql .= dolSqlDateFilter('p.dateo', $search_sday, $search_smonth, $search_syear);
 $sql .= dolSqlDateFilter('p.datee', $search_eday, $search_emonth, $search_eyear);
 
-
 if ($search_date_start_start) {
 	$sql .= " AND p.dateo >= '".$db->idate($search_date_start_start)."'";
 }
@@ -1401,7 +1400,7 @@ while ($i < $imaxinloop) {
 		}
 		// Project url
 		if (!empty($arrayfields['p.ref']['checked'])) {
-			print '<td class="nowraponall">';
+			print '<td class="nowraponall tdoverflowmax200" title="'.dol_escape_htmltag($object->ref).'">';
 			print $object->getNomUrl(1, (!empty(GETPOST('search_usage_event_organization', 'int'))?'eventorganization':''));
 			if ($object->hasDelay()) {
 				print img_warning($langs->trans('Late'));
@@ -1794,10 +1793,12 @@ while ($i < $imaxinloop) {
 		}
 		// Email MsgID
 		if (!empty($arrayfields['p.email_msgid']['checked'])) {
-			print '<td class="center">';
-			print $obj->email_msgid;
+			print '<td class="tdoverflowmax125" title="'.dol_escape_htmltag($obj->email_msgid).'">';
+			print dol_escape_htmltag($obj->email_msgid);
 			print '</td>';
-			if (!$i) $totalarray['nbfield']++;
+			if (!$i) {
+				$totalarray['nbfield']++;
+			}
 		}
 		// Import key
 		if (!empty($arrayfields['p.import_key']['checked'])) {
