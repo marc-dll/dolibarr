@@ -343,6 +343,8 @@ function rebuildObjectSql($destdir, $module, $objectname, $newmask, $readdir = '
 				$type = 'varchar(20)';
 			} elseif ($type == 'ip') {
 				$type = 'varchar(32)';
+			} elseif ($type == 'boolean') {
+				$type = 'tinyint';
 			}
 
 			$texttoinsert .= "\t".$key." ".$type;

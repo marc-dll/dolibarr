@@ -417,7 +417,7 @@ class ExtraFields
 			$sql .= "'".$this->db->idate(dol_now())."',";
 			$sql .= " ".($enabled ? "'".$this->db->escape($enabled)."'" : "1").",";
 			$sql .= " ".($help ? "'".$this->db->escape($help)."'" : "null").",";
-			$sql .= " ".($totalizable ? 'TRUE' : 'FALSE').",";
+			$sql .= " ".($totalizable ? 1 : 0).",";
 			$sql .= " ".($css ? "'".$this->db->escape($css)."'" : "null").",";
 			$sql .= " ".($csslist ? "'".$this->db->escape($csslist)."'" : "null").",";
 			$sql .= " ".($cssview ? "'".$this->db->escape($cssview)."'" : "null");
@@ -808,7 +808,7 @@ class ExtraFields
 			$sql .= " '".$this->db->escape($params)."',";
 			$sql .= " '".$this->db->escape($list)."', ";
 			$sql .= " '".$this->db->escape($printable)."', ";
-			$sql .= " ".($totalizable ? 'TRUE' : 'FALSE').",";
+			$sql .= " ".($totalizable ? 1 : 0).",";
 			$sql .= " ".(($default != '') ? "'".$this->db->escape($default)."'" : "null").",";
 			$sql .= " ".($computed ? "'".$this->db->escape($computed)."'" : "null").",";
 			$sql .= " ".$user->id.",";
