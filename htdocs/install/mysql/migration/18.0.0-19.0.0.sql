@@ -233,7 +233,7 @@ UPDATE llx_menu SET url = CONCAT(url, '&mode=init') WHERE fk_mainmenu = 'ticket'
 -- VPGSQL8.2 ALTER TABLE llx_asset ALTER COLUMN disposal_subject_to_vat DROP DEFAULT, ALTER COLUMN disposal_subject_to_vat TYPE boolean USING disposal_subject_to_vat::integer <> 0, ALTER COLUMN disposal_subject_to_vat SET DEFAULT false;
 
 -- VMYSQL4.1 ALTER TABLE llx_asset_depreciation_options_economic MODIFY COLUMN accelerated_depreciation_option boolean DEFAULT false;
--- VPGSQL8.2 ALTER TABLE llx_asset ALTER COLUMN accelerated_depreciation_option DROP DEFAULT, ALTER COLUMN accelerated_depreciation_option TYPE boolean USING accelerated_depreciation_option::integer <> 0, ALTER COLUMN accelerated_depreciation_option SET DEFAULT false;
+-- VPGSQL8.2 ALTER TABLE llx_asset_depreciation_options_economic ALTER COLUMN accelerated_depreciation_option DROP DEFAULT, ALTER COLUMN accelerated_depreciation_option TYPE boolean USING accelerated_depreciation_option::integer <> 0, ALTER COLUMN accelerated_depreciation_option SET DEFAULT false;
 
 
 -- VMYSQL4.1 ALTER TABLE llx_asset MODIFY COLUMN not_depreciated tinyint DEFAULT 0;
@@ -246,4 +246,4 @@ UPDATE llx_menu SET url = CONCAT(url, '&mode=init') WHERE fk_mainmenu = 'ticket'
 -- VPGSQL8.2 ALTER TABLE llx_asset ALTER COLUMN disposal_subject_to_vat DROP DEFAULT, ALTER COLUMN disposal_subject_to_vat TYPE smallint USING CASE disposal_subject_to_vat WHEN 't' THEN 1 ELSE 0 END, ALTER COLUMN disposal_subject_to_vat SET DEFAULT 0;
 
 -- VMYSQL4.1 ALTER TABLE llx_asset_depreciation_options_economic MODIFY COLUMN accelerated_depreciation_option tinyint DEFAULT 0;
--- VPGSQL8.2 ALTER TABLE llx_asset ALTER COLUMN accelerated_depreciation_option DROP DEFAULT, ALTER COLUMN accelerated_depreciation_option TYPE smallint USING CASE accelerated_depreciation_option WHEN 't' THEN 1 ELSE 0 END, ALTER COLUMN accelerated_depreciation_option SET DEFAULT 0;
+-- VPGSQL8.2 ALTER TABLE llx_asset_depreciation_options_economic ALTER COLUMN accelerated_depreciation_option DROP DEFAULT, ALTER COLUMN accelerated_depreciation_option TYPE smallint USING CASE accelerated_depreciation_option WHEN 't' THEN 1 ELSE 0 END, ALTER COLUMN accelerated_depreciation_option SET DEFAULT 0;
